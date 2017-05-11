@@ -2,60 +2,59 @@ meta:
   id: synchrophasor
   endian: be
 seq:
-  - id: magic
-    contents: [0xaa] 
-  - id: reserved
-    type: b1
-  - id: sync
-    type: b3
-    enum: synchronization_word
-    doc: Frame type
-  - id: ver
-    type: b4
-    enum: version_number
-    doc: Version number
-  - id: framesize
-    type: u2
-    doc: >
-     Total number of bytes in the frame, including CHK.
-     16-bit unsigned number. Range = maximum 65535
-  - id: idcode
-    type: u2
-    doc: >
-      Data stream ID number, 16-bit integer, assigned by user, 1–65534 (0 and 65535 are reserved). Identifies destination data stream for commands and source data stream for other messages. A stream will be hosted by a device that can be physical or virtual. If a device only hosts one data stream, the IDCODE identifies the device as well as the stream. If the device hosts more than one data stream, there shall be a different IDCODE for each stream.
-  - id: soc
-    type: u4
-    doc: >
-      Time stamp, 32-bit unsigned number, SOC count starting at midnight 01-Jan-1970 (UNIX time base).
-      Range is 136 years, rolls over 2106 AD.
-      Leap seconds are not included in count, so each year has the same number of seconds except leap years, which have an extra day (86 400 s).
-  - id: time_quailty
-    type: b8
-    doc: Time quality flags.
-  - id: fracsec
-    type: b24
-    doc: >
-      When divided by TIME_BASE yields the actual fractional second. FRACSEC used in all messages to and from a given PMU shall use the same TIME_BASE that is provided in the configuration message from that PMU.
-  - id: body
-    type:
-      switch-on: sync
-      cases:
-        'synchronization_word::data': data
-        'synchronization_word::header': header
-        'synchronization_word::cf1': cf1
-        'synchronization_word::cf2': cf2
-        'synchronization_word::cf3': cf3
-        'synchronization_word::command': command
-  - id: chk
-    type: u2  
-    doc: CRC-CCITT check sum
-        
+  - id: synchrophasor_session
+    type: synchrophasor_pkt
 types:
-  data:
+  synchrophasor_pkt:
     seq:
+      - id: magic
+        contents: [0xaa] 
+      - id: reserved
+        type: b1
+      - id: sync
+        type: b3
+        enum: synchronization_word
+        doc: Frame type
+      - id: ver
+        type: b4
+        enum: version_number
+        doc: Version number
+      - id: framesize
+        type: u2
+        doc: >
+         Total number of bytes in the frame, including CHK.
+         16-bit unsigned number. Range = maximum 65535
+      - id: idcode
+        type: u2
+        doc: >
+          Data stream ID number, 16-bit integer, assigned by user, 1–65534 (0 and 65535 are reserved). Identifies destination data stream for commands and source data stream for other messages. A stream will be hosted by a device that can be physical or virtual. If a device only hosts one data stream, the IDCODE identifies the device as well as the stream. If the device hosts more than one data stream, there shall be a different IDCODE for each stream.
+      - id: soc
+        type: u4
+        doc: >
+          Time stamp, 32-bit unsigned number, SOC count starting at midnight 01-Jan-1970 (UNIX time base).
+          Range is 136 years, rolls over 2106 AD.
+          Leap seconds are not included in count, so each year has the same number of seconds except leap years, which have an extra day (86 400 s).
       - id: time_quailty
         type: b8
         doc: Time quality flags.
+      - id: fracsec
+        type: b24
+        doc: >
+          When divided by TIME_BASE yields the actual fractional second. FRACSEC used in all messages to and from a given PMU shall use the same TIME_BASE that is provided in the configuration message from that PMU.
+      - id: body
+        type:
+          switch-on: sync
+          cases:
+            'synchronization_word::data': data
+            'synchronization_word::header': header
+            'synchronization_word::cf1': cf1
+            'synchronization_word::cf2': cf2
+            'synchronization_word::cf3': cf3
+            'synchronization_word::command': command
+      - id: chk
+        type: u2  
+        doc: CRC-CCITT check sum
+    
   header:
     seq:
       - id: time_quailty
@@ -73,11 +72,26 @@ types:
         doc: Time quality flags.
   command:
     seq:
-      - id: time_quailty
-        type: b8
-        doc: Time quality flags.
-
+      - id: cmd
+        type: u2
+        doc: Command being sent to the PMU/PDC.
+      - id: extframe
+        size: _parent.framesize-16
+  data:
+    seq:
+      - id: stat
+        type: u2
+        doc: Bit-mapped flags.
+      - id: phasors
+        type: u4
+        repeat: eos
+      - id: dum
+        type: str
+        encoding: UTF-8
+        size-eos: true
+                
   cf2:
+    
     seq:
       - id: time_quailty
         type: b8
