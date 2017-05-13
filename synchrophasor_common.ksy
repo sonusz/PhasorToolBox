@@ -26,7 +26,7 @@ seq:
       Leap seconds are not included in count, so each year has the same number of seconds except leap 
       years, which have an extra day (86 400 s).
   - id: fracsec
-    type: fraction_of_second
+    type: fracsec
     doc: >
       Fraction of second and Time Quality, time of measurement for data frames or time of frame transmission for non-data frames.
   - id: data
@@ -72,12 +72,12 @@ types:
         1: header_frame
         2: configuration_frame_1
         3: configuration_frame_2
-        4: configuration_frame_3
-        5: command_frame
+        4: command_frame
+        5: configuration_frame_3
       version_number_enum:
-        1: c371182005
-        2: c3711822011
-  fraction_of_second:
+        1: c_37_118_2005
+        2: c_37_118_2_2011
+  fracsec:
     seq:
       - id: time_quailty
         type: b8
@@ -91,16 +91,16 @@ types:
           from that PMU.
     enums:
       msg_tq:
-        1111: Fault―clock_failure_time_not_reliable
-        1011: Time_within_10_s_of_UTC
-        1010: Time_within_1_s_of_UTC
-        1001: Time_within_10–1_s_of_UTC
-        1000: Time_within_10–2_s_of_UTC
-        0111: Time_within_10–3_s_of_UTC
-        0110: Time_within_10–4_s_of_UTC
-        0101: Time_within_10–5_s_of_UTC
-        0100: Time_within_10–6_s_of_UTC
-        0011: Time_within_10–7_s_of_UTC
-        0010: Time_within_10–8_s_of_UTC
-        0001: Time_within_10–9_s_of_UTC
-        0000: Normal_operation_clock_locked_to_UTC_traceable_source
+        15: fault_clock_failure_time_not_reliable
+        11: time_within_10_s_of_utc
+        10: time_within_1_s_of_utc
+        9: time_within_10_to_1_s_of_utc
+        8: time_within_10_to_2_s_of_utc
+        7: time_within_10_to_3_s_of_utc
+        6: time_within_10_to_4_s_of_utc
+        5: time_within_10_to_5_s_of_utc
+        4: time_within_10_to_6_s_of_utc
+        3: time_within_10_to_7_s_of_utc
+        2: time_within_10_to_8_s_of_utc
+        1: time_within_10_to_9_s_of_utc
+        0: normal_operation_clock_locked_to_utc_traceable_source
