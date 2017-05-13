@@ -13,22 +13,26 @@ seq:
   - id: idcode
     type: u2
     doc: >
-      Data stream ID number, 16-bit integer, assigned by user, 1–65534 (0 and 65535 are reserved). 
-      Identifies destination data stream for commands and source data stream for other messages. A 
-      stream will be hosted by a device that can be physical or virtual. If a device only hosts one 
-      data stream, the IDCODE identifies the device as well as the stream. If the device hosts more 
-      than one data stream, there shall be a different IDCODE for each stream.
+      Data stream ID number, 16-bit integer, assigned by user, 1–65534 (0 and 
+      65535 are reserved). Identifies destination data stream for commands 
+      and source data stream for other messages. A stream will be hosted by 
+      a device that can be physical or virtual. If a device only hosts one 
+      data stream, the IDCODE identifies the device as well as the stream. 
+      If the device hosts more than one data stream, there shall be a 
+      different IDCODE for each stream.
   - id: soc
     type: u4
     doc: >
-      Time stamp, 32-bit unsigned number, SOC count starting at midnight 01-Jan-1970 (UNIX time base).
+      Time stamp, 32-bit unsigned number, SOC count starting at midnight 
+      01-Jan-1970 (UNIX time base).
       Range is 136 years, rolls over 2106 AD.
-      Leap seconds are not included in count, so each year has the same number of seconds except leap 
-      years, which have an extra day (86 400 s).
+      Leap seconds are not included in count, so each year has the same number 
+      of seconds except leap years, which have an extra day (86 400 s).
   - id: fracsec
     type: fracsec
     doc: >
-      Fraction of second and Time Quality, time of measurement for data frames or time of frame transmission for non-data frames.
+      Fraction of second and Time Quality, time of measurement for data frames 
+      or time of frame transmission for non-data frames.
   - id: data
     size: framesize - 16
   - id: chk
@@ -47,7 +51,9 @@ types:
         doc: Leading byte: AA hex
       - id: reserved
         type: b1
-        doc: Bit 7: Reserved for future definition, must be 0 for this standard version.
+        doc: >
+          Bit 7: Reserved for future definition, must be 0 for this standard 
+          version.
       - id: frame_type
         type: b3
         enum: frame_type_enum
@@ -64,8 +70,9 @@ types:
         enum: version_number_enum
         doc: >
           Version number
-          Version 1 (0001) for messages defined in IEEE Std C37.118-2005 [B6]. 
-          Version 2 (0010) for messages added in this revision, IEEE Std C37.118.2-2011.
+          Version 1 (0001) for messages defined in IEEE Std C37.118-2005. 
+          Version 2 (0010) for messages added in this revision, IEEE Std 
+          C37.118.2-2011.
     enums:
       frame_type_enum:
         0: data_frame
@@ -86,9 +93,10 @@ types:
       - id: raw_fraction_of_second
         type: b24
         doc: >
-          When divided by TIME_BASE yields the actual fractional second. FRACSEC used in all messages to 
-          and from a given PMU shall use the same TIME_BASE that is provided in the configuration message 
-          from that PMU.
+          When divided by TIME_BASE yields the actual fractional second. 
+          FRACSEC used in all messages to and from a given PMU shall use the 
+          same TIME_BASE that is provided in the configuration message from 
+          that PMU.
     enums:
       msg_tq:
         15: fault_clock_failure_time_not_reliable

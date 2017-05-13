@@ -15,8 +15,11 @@ seq:
       0000 0000 0000 0110: Send CFG-3 frame (optional command).
       0000 0000 0000 1000: Extended frame.
       0000 0000 xxxx xxxx: All undesignated codes reserved.
-      0000 yyyy xxxx xxxx: All codes where yyyy ≠ 0 available for user designation.
+      0000 yyyy xxxx xxxx: All codes where yyyy ≠ 0 available for user 
+      designation.
       zzzz xxxx xxxx xxxx: All codes where zzzz ≠ 0 reserved.
+  - id: extframe
+    size-eos: true
 enums:
   command_code:
     1: turn_off_transmission_of_data_frames
