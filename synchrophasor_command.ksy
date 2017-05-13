@@ -26,11 +26,3 @@ enums:
     5: send_cfg_2_frame
     6: send_cfg_3_frame
     8: extended_frame
-
-
-
-
-
-
-
-
