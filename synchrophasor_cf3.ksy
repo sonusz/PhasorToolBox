@@ -163,21 +163,21 @@ types:
         seq:
           - id: unused
             type: b12
-            doc: Data format in data frames
-          - id: bit3
+            doc: Bits 15–4: Unused
+          - id: freq_data_type
             type: b1
-            doc: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
-          - id: bit2
+            doc: Bit 3: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
+          - id: analogs_data_type
             type: b1
-            doc: 0 = analogs 16-bit integer, 1 = floating point
-          - id: bit1
+            doc: Bit 2: 0 = analogs 16-bit integer, 1 = floating point
+          - id: phasors_data_type
             type: b1
-            doc: 0 = phasors 16-bit integer, 1 = floating point
-          - id: bit0
+            doc: Bit 1: 0 = phasors 16-bit integer, 1 = floating point
+          - id: rectangular_or_polar
             type: b1
             doc: >
-              0 = phasor real and imaginary (rectangular), 1 = magnitude and 
-              angle (polar)
+              Bit 0: 0 = phasor real and imaginary (rectangular), 1 = 
+              magnitude and angle (polar)
       chnam:
         seq:
           - id: phasor_names
@@ -247,57 +247,58 @@ types:
         types:
           modification_flags:
             seq:
-              - id: bit15
+              - id: modification_applied
                 type: b1
                 doc: Modification applied, type not here defined
-              - id: bits11_14
+              - id: reserved
                 type: b4
                 doc: Reserved for future assignment
-              - id: bit10
+              - id: pseudo_phasor_value
                 type: b1
                 doc: Pseudo-phasor value (combined from other phasors) 
-              - id: bit9
+              - id: phasor_phase_adjusted_for_rotation
                 type: b1
                 doc: Phasor phase adjusted for rotation ( ±30o, ±120o, etc.) 
-              - id: bit8
+              - id: phasor_phase_adjusted_for_calibration
                 type: b1
                 doc: Phasor phase adjusted for calibration
-              - id: bit7
+              - id: phasor_magnitude_adjusted_for_calibration
                 type: b1
                 doc: Phasor magnitude adjusted for calibration
-              - id: bit6
+              - id: filtered_without_changing_sampling
                 type: b1
                 doc: Filtered without changing sampling
-              - id: bit5
+              - id: down_sampled_with_nonfir_filter
                 type: b1
                 doc: Down sampled with non-FIR filter
-              - id: bit4
+              - id: down_sampled_with_fir_filter
                 type: b1
                 doc: Down sampled with FIR filter
-              - id: bit3
+              - id: down_sampled_by_reselection
                 type: b1
                 doc: Down sampled by reselection (selecting every Nth sample) 
-              - id: bit2
+              - id: up_sampled_with_extrapolation
                 type: b1
                 doc: Upsampled with extrapolation
-              - id: bit1
+              - id: up_sampled_with_interpolation
                 type: b1
                 doc: Up sampled with interpolation
-              - id: bit0
+              - id: reserved
                 type: b1
                 doc: Not used, reserved
           phasor_type_indication:
             seq:
-              - id: bits7_4
+              - id: reserved
                 type: b4
-                doc: Reserved for future use
-              - id: bit3
+                doc: Bits 7-4: Reserved for future use
+              - id: voltage_or_current
                 type: b1
-                doc: 0―voltage; 1―current.
-              - id: bits2_0
+                doc: Bit 3: 0―voltage; 1―current.
+              - id: phasor_component
                 type: b3
-                enum: phasor_component
+                enum: phasor_component_enum
                 doc: >
+                  Bits 2-0:
                   Phasor component, coded as follows
                   111: Reserved
                   110: Phase C
@@ -308,7 +309,7 @@ types:
                   001: Positive sequence
                   000: Zero sequence
             enums:
-              phasor_component:
+              phasor_component_enum:
                 7: reserved
                 6: phase_c
                 5: phase_b
@@ -342,10 +343,10 @@ types:
               masks is left to the user, such as min or max settings.
       fnom:
         seq:
-          - id: bits15_1
+          - id: reserved
             type: b15
             doc: Bits 15–1:Reserved
-          - id: bit0
+          - id: fundamental_frequency
             type: b1
             doc: >
               1―Fundamental frequency = 50 Hz

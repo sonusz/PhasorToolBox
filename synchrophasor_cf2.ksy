@@ -88,7 +88,7 @@ types:
         doc: >
           Conversion factor for phasor channels. Four bytes for each phasor. 
           Most significant byte: 0―voltage; 1―current. Least significant 
-          bytes: An unsigned 24-bit word in 10–5 V or amperes per bit to scale 
+          bytes: An unsigned 24-bit word in 10^(–5) V or amperes per bit to scale 
           16-bit integer data (if transmitted data is in floating-point 
           format, this 24-bit value shall be ignored).
       - id: anunit
@@ -127,21 +127,21 @@ types:
         seq:
           - id: unused
             type: b12
-            doc: Data format in data frames
-          - id: bit3
+            doc: Bits 15–4: Unused
+          - id: freq_data_type
             type: b1
-            doc: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
-          - id: bit2
+            doc: Bit 3: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
+          - id: analogs_data_type
             type: b1
-            doc: 0 = analogs 16-bit integer, 1 = floating point
-          - id: bit1
+            doc: Bit 2: 0 = analogs 16-bit integer, 1 = floating point
+          - id: phasors_data_type
             type: b1
-            doc: 0 = phasors 16-bit integer, 1 = floating point
-          - id: bit0
+            doc: Bit 1: 0 = phasors 16-bit integer, 1 = floating point
+          - id: rectangular_or_polar
             type: b1
             doc: >
-              0 = phasor real and imaginary (rectangular), 1 = magnitude and 
-              angle (polar)
+              Bit 0: 0 = phasor real and imaginary (rectangular), 1 = 
+              magnitude and angle (polar)
       chnam:
         seq:
           - id: phasor_names
@@ -164,10 +164,10 @@ types:
             repeat-expr: _parent.dgnmr*16
       fnom:
         seq:
-          - id: bits15_1
+          - id: reserved
             type: b15
             doc: Bits 15–1:Reserved
-          - id: bit0
+          - id: fundamental_frequency
             type: b1
             doc: >
               1―Fundamental frequency = 50 Hz
