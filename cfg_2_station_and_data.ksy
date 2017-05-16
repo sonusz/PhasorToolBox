@@ -19,9 +19,9 @@ seq:
       frames.
   - id: freq
     type: freq
-    doc: Frequency deviation from nominal, in mHz
+    doc: Frequency
   - id: dfreq
-    type: freq
+    type: dfreq
     doc: >
       ROCOF, in hertz per second times 100
       Range –327.67 to +327.67 Hz per second
@@ -145,8 +145,8 @@ types:
         type:
           switch-on: _root.station.format.phasors_data_type
           cases:
-            false: int
-            true: float
+            int: int
+            float: float
     types:
       int:
         seq:
@@ -154,8 +154,8 @@ types:
             type:
               switch-on: _root.station.format.rectangular_or_polar
               cases:
-                false: rectangular
-                true: polar
+                rectangular: rectangular
+                polar: polar
         types:
           rectangular:
             seq:
@@ -185,8 +185,8 @@ types:
             type:
               switch-on: _root.station.format.rectangular_or_polar
               cases:
-                false: rectangular
-                true: polar
+                rectangular: rectangular
+                polar: polar
         types:
           rectangular:
             seq:
@@ -216,71 +216,56 @@ types:
         type:
           switch-on: _root.station.format.freq_data_type
           cases:
-            false: int
-            true: float
+            int: int
+            float: float
     types:
       int:
         seq:
-          - id: freq
-            type:
-              switch-on: _root.station.fnom.fundamental_frequency
-              cases:
-                false: sixty
-                true: fifty
-        types:
-          sixty:
-            seq:
-              - id: freq
-                type: s2
-            instances:
-              acutall_freq:
-                value: freq/1000 + 60
-          fifty:
-            seq:
-              - id: freq
-                type: s2
-            instances:
-              acutall_freq:
-                value: freq/1000 + 50
+          - id: raw_freq
+            type: s2
+        instances:
+          freq:
+            value: freq/1000.0 + _root.station.fnom.fundamental_frequency
       float:
         seq:
-          - id: freq
-            type:
-              switch-on: _root.station.fnom.fundamental_frequency
-              cases:
-                false: sixty
-                true: fifty
-        types:
-          sixty:
-            seq:
-              - id: freq
-                type: f4
-            instances:
-              acutall_freq:
-                value: freq/1000 + 60
-          fifty:
-            seq:
-              - id: freq
-                type: f4
-            instances:
-              acutall_freq:
-                value: freq/1000 + 50
+          - id: raw_freq
+            type: f4
+        instances:
+          freq:
+            value: freq
+  dfreq:
+    seq:
+      - id: dfreq
+        type:
+          switch-on: _root.station.format.freq_data_type
+          cases:
+            int: int
+            float: float
+    types:
+      int:
+        seq:
+          - id: raw_dfreq
+            type: s2
+        instances:
+          freq:
+            value: freq/100.0
+      float:
+        seq:
+          - id: raw_dfreq
+            type: f4
+        instances:
+          freq:
+            value: freq
   analog:
     seq:
       - id: analog
         type:
           switch-on: _root.station.format.analogs_data_type
           cases:
-            false: int
-            true: float
-    types:
-      int:
-        seq:
-          - id: analog
-            type: b16
-            doc:  Values and ranges defined by user.
-      float:
-        seq:
-          - id: analog
-            type: f4
-            doc:  IEEE floating point.
+            int: b16
+            float: f4
+        doc: >
+          Analog word. 16-bit integer. It could be sampled data such as control 
+          signal or transducer value. Values and ranges defined by user. Can be 
+          16-bit integer or IEEE floating point. Data type indicated by the 
+          FORMAT field in configuration 1, 2, and 3 frames

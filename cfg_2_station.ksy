@@ -85,21 +85,36 @@ types:
     seq:
       - id: unused
         type: b12
-        doc: Bits 15–4: Unused
+        doc: >
+          Bits 15–4: Unused
       - id: freq_data_type
         type: b1
-        doc: Bit 3: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
+        enum: int_or_float_enum
+        doc: >
+          Bit 3: 0 = FREQ/DFREQ 16-bit integer, 1 = floating point
       - id: analogs_data_type
         type: b1
-        doc: Bit 2: 0 = analogs 16-bit integer, 1 = floating point
+        enum: int_or_float_enum
+        doc: >
+          Bit 2: 0 = analogs 16-bit integer, 1 = floating point
       - id: phasors_data_type
         type: b1
-        doc: Bit 1: 0 = phasors 16-bit integer, 1 = floating point
+        enum: int_or_float_enum
+        doc: >
+          Bit 1: 0 = phasors 16-bit integer, 1 = floating point
       - id: rectangular_or_polar
         type: b1
+        enum: rectangular_or_polar_enum
         doc: >
           Bit 0: 0 = phasor real and imaginary (rectangular), 1 = 
           magnitude and angle (polar)
+    enums:
+      int_or_float_enum:
+        0: int
+        1: float
+      rectangular_or_polar_enum:
+        0: rectangular
+        1: polar
   chnam:
     seq:
       - id: phasor_names
@@ -119,7 +134,8 @@ types:
       - id: voltage_or_current
         type: u1
         enum: voltage_or_current_enum
-        doc: Most significant byte: 0―voltage; 1―current.
+        doc: >
+          Most significant byte: 0―voltage; 1―current.
       - id: conversion_factor
         type: b24
         doc: >
@@ -166,9 +182,13 @@ types:
     seq:
       - id: reserved
         type: b15
-        doc: Bits 15–1:Reserved
-      - id: fundamental_frequency
+        doc: >
+          Bits 15–1:Reserved
+      - id: raw_fundamental_frequency
         type: b1
         doc: >
-          1―Fundamental frequency = 50 Hz
           0―Fundamental frequency = 60 Hz
+          1―Fundamental frequency = 50 Hz
+    instances:
+      fundamental_frequency:
+        value: 60-raw_fundamental_frequency.to_i*10

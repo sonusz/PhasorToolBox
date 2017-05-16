@@ -303,9 +303,13 @@ types:
     seq:
       - id: reserved
         type: b15
-        doc: Bits 15–1:Reserved
-      - id: fundamental_frequency
+        doc: >
+          Bits 15–1:Reserved
+      - id: raw_fundamental_frequency
         type: b1
         doc: >
           1―Fundamental frequency = 50 Hz
           0―Fundamental frequency = 60 Hz
+    instances:
+      fundamental_frequency:
+        value: 60-raw_fundamental_frequency.to_i*10
