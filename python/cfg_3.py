@@ -8,9 +8,9 @@ from pkg_resources import parse_version
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 
+
 if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
-
 
 class Cfg3(KaitaiStruct):
     def __init__(self, _io, _parent=None, _root=None):
@@ -33,6 +33,7 @@ class Cfg3(KaitaiStruct):
             self._root = _root if _root else self
             self.flags = self._io.read_bits_int(8)
             self.time_base = self._io.read_bits_int(24)
+
 
     class Cfg3Station(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -77,7 +78,6 @@ class Cfg3(KaitaiStruct):
             class RectangularPolar(Enum):
                 rectangular = 0
                 polar = 1
-
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
@@ -88,6 +88,7 @@ class Cfg3(KaitaiStruct):
                 self.phasors_data_type = self._root.Cfg3Station.Format.IntFloat(self._io.read_bits_int(1))
                 self.rectangular_or_polar = self._root.Cfg3Station.Format.RectangularPolar(self._io.read_bits_int(1))
 
+
         class Name(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
@@ -95,6 +96,7 @@ class Cfg3(KaitaiStruct):
                 self._root = _root if _root else self
                 self.len = self._io.read_u1()
                 self.name = (self._io.read_bytes(self.len)).decode(u"UTF-8")
+
 
         class Chnam(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -113,6 +115,8 @@ class Cfg3(KaitaiStruct):
                 for i in range((self._parent.dgnmr * 16)):
                     self.digital_status_labels[i] = self._root.Cfg3Station.Name(self._io, self, self._root)
 
+
+
         class Digunit(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
@@ -120,6 +124,7 @@ class Cfg3(KaitaiStruct):
                 self._root = _root if _root else self
                 self.normal_status = self._io.read_bits_int(16)
                 self.current_valid_inputs = self._io.read_bits_int(16)
+
 
         class Fnom(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -137,6 +142,7 @@ class Cfg3(KaitaiStruct):
                 self._m_fundamental_frequency = (60 - (int(self.raw_fundamental_frequency) * 10))
                 return self._m_fundamental_frequency if hasattr(self, '_m_fundamental_frequency') else None
 
+
         class Anscale(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
@@ -145,14 +151,14 @@ class Cfg3(KaitaiStruct):
                 self.magnitude_scaling = self._io.read_f4be()
                 self.offset = self._io.read_f4be()
 
+
         class Phscale(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
                 self.modification_flags = self._root.Cfg3Station.Phscale.ModificationFlags(self._io, self, self._root)
-                self.phasor_type_indication = self._root.Cfg3Station.Phscale.PhasorTypeIndication(self._io, self,
-                                                                                                  self._root)
+                self.phasor_type_indication = self._root.Cfg3Station.Phscale.PhasorTypeIndication(self._io, self, self._root)
                 self.user_designation = self._io.read_bytes(1)
                 self.scale_factor = self._io.read_f4be()
                 self.phasor_angle_adjustment = self._io.read_f4be()
@@ -176,7 +182,9 @@ class Cfg3(KaitaiStruct):
                     self.up_sampled_with_interpolation = self._io.read_bits_int(1) != 0
                     self.reserved = self._io.read_bits_int(1) != 0
 
+
             class PhasorTypeIndication(KaitaiStruct):
+
                 class VoltageOrCurrentEnum(Enum):
                     voltage = 0
                     current = 1
@@ -190,13 +198,15 @@ class Cfg3(KaitaiStruct):
                     phase_b = 5
                     phase_c = 6
                     reserved_111 = 7
-
                 def __init__(self, _io, _parent=None, _root=None):
                     self._io = _io
                     self._parent = _parent
                     self._root = _root if _root else self
                     self.reserved = self._io.read_bits_int(4)
-                    self.voltage_or_current = self._root.Cfg3Station.Phscale.PhasorTypeIndication.VoltageOrCurrentEnum(
-                        self._io.read_bits_int(1))
-                    self.phasor_component = self._root.Cfg3Station.Phscale.PhasorTypeIndication.PhasorComponentEnum(
-                        self._io.read_bits_int(3))
+                    self.voltage_or_current = self._root.Cfg3Station.Phscale.PhasorTypeIndication.VoltageOrCurrentEnum(self._io.read_bits_int(1))
+                    self.phasor_component = self._root.Cfg3Station.Phscale.PhasorTypeIndication.PhasorComponentEnum(self._io.read_bits_int(3))
+
+
+
+
+

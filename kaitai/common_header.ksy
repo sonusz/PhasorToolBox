@@ -47,6 +47,7 @@ types:
           version.
       - id: frame_type
         type: b3
+        enum: frame_type_enum
         doc: >
           Frame type
           000: Data Frame
@@ -87,17 +88,18 @@ types:
           Bit 6: Leap Second Direction―0 for add, 1 for delete
       - id: leap_second_occurred
         type: b1
+        enum: leap_second_occurred_enum
         doc: >
           Bit 5: Leap Second Occurred―set in the first second after the leap 
-          second 
-          occurs and remains set for 24 h
+          second occurs and remains set for 24 h
       - id: leap_second_pending
         type: b1
+        enum: leap_second_pending_enum
         doc: >
           Bit 4: Leap Second Pending―shall be set not more than 60 s nor less 
           than 1 s before a leap second occurs, and cleared in the second 
           after the leap second occurs.
-      - id: time_quailty
+      - id: time_quality
         type: b4
         enum: msg_tq
         doc: >
@@ -113,6 +115,12 @@ types:
       leap_second_direction_enum:
         0: add
         1: delete
+      leap_second_occurred_enum:
+        0: no_leap_second_occurred_in_the_last_24hs
+        1: leap_second_occurred_in_the_last_24hs
+      leap_second_pending_enum:
+        0: no_leap_second_occurs_in_the_next_60s
+        1: leap_second_occurs_in_60s
       msg_tq:
         15: fault_clock_failure_time_not_reliable
         11: time_within_10_s_of_utc

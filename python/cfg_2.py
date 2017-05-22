@@ -8,9 +8,9 @@ from pkg_resources import parse_version
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 
+
 if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
-
 
 class Cfg2(KaitaiStruct):
     def __init__(self, _io, _parent=None, _root=None):
@@ -32,6 +32,7 @@ class Cfg2(KaitaiStruct):
             self._root = _root if _root else self
             self.flags = self._io.read_bits_int(8)
             self.time_base = self._io.read_bits_int(24)
+
 
     class Cfg2Station(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -69,7 +70,6 @@ class Cfg2(KaitaiStruct):
             class RectangularPolar(Enum):
                 rectangular = 0
                 polar = 1
-
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
@@ -80,12 +80,14 @@ class Cfg2(KaitaiStruct):
                 self.phasors_data_type = self._root.Cfg2Station.Format.IntFloat(self._io.read_bits_int(1))
                 self.rectangular_or_polar = self._root.Cfg2Station.Format.RectangularPolar(self._io.read_bits_int(1))
 
+
         class Name(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
                 self.name = (self._io.read_bytes(16)).decode(u"UTF-8")
+
 
         class Anunit(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -94,6 +96,7 @@ class Cfg2(KaitaiStruct):
                 self._root = _root if _root else self
                 self.analog_input = self._io.read_u1()
                 self.conversion_factor = self._io.read_bits_int(24)
+
 
         class Chnam(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -112,6 +115,8 @@ class Cfg2(KaitaiStruct):
                 for i in range((self._parent.dgnmr * 16)):
                     self.digital_status_labels[i] = self._root.Cfg2Station.Name(self._io, self, self._root)
 
+
+
         class Digunit(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
@@ -119,6 +124,7 @@ class Cfg2(KaitaiStruct):
                 self._root = _root if _root else self
                 self.normal_status = self._io.read_bits_int(16)
                 self.current_valid_inputs = self._io.read_bits_int(16)
+
 
         class Fnom(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -136,12 +142,12 @@ class Cfg2(KaitaiStruct):
                 self._m_fundamental_frequency = (60 - (int(self.raw_fundamental_frequency) * 10))
                 return self._m_fundamental_frequency if hasattr(self, '_m_fundamental_frequency') else None
 
+
         class Phunit(KaitaiStruct):
 
             class VoltageOrCurrentEnum(Enum):
                 voltage = 0
                 current = 1
-
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
@@ -156,3 +162,7 @@ class Cfg2(KaitaiStruct):
 
                 self._m_conversion_factor = (self.raw_conversion_factor / 100000.0)
                 return self._m_conversion_factor if hasattr(self, '_m_conversion_factor') else None
+
+
+
+

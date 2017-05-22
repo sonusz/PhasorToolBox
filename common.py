@@ -8,11 +8,10 @@ from pkg_resources import parse_version
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 
-
 if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
-from cfg_2 import Cfg2
+
 class Common(KaitaiStruct):
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
@@ -23,15 +22,10 @@ class Common(KaitaiStruct):
         self.idcode = self._io.read_u2be()
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root)
-        _on = self.sync.frame_type
-        if _on == 2:
-            self.data = Cfg2(self._io)
-        elif _on == 3:
-            self.data = Cfg2(self._io)
+        self.data = self._io.read_bytes((self.framesize - 16))
         self.chk = self._io.read_u2be()
 
     class SyncWord(KaitaiStruct):
-
         class FrameTypeEnum(Enum):
             data_frame = 0
             header_frame = 1
@@ -43,18 +37,17 @@ class Common(KaitaiStruct):
         class VersionNumberEnum(Enum):
             c_37_118_2005 = 1
             c_37_118_2_2011 = 2
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
             self.magic = self._io.ensure_fixed_contents(struct.pack('1b', -86))
             self.reserved = self._io.read_bits_int(1) != 0
-            self.frame_type = self._io.read_bits_int(3)
+            self.frame_type = self._root.SyncWord.FrameTypeEnum(self._io.read_bits_int(3))
             self.version_number = self._root.SyncWord.VersionNumberEnum(self._io.read_bits_int(4))
 
-
     class Fracsec(KaitaiStruct):
-
         class LeapSecondDirectionEnum(Enum):
             add = 0
             delete = 1
@@ -73,6 +66,7 @@ class Common(KaitaiStruct):
             time_within_1_s_of_utc = 10
             time_within_10_s_of_utc = 11
             fault_clock_failure_time_not_reliable = 15
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -84,7 +78,6 @@ class Common(KaitaiStruct):
             self.time_quality = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
             self.raw_fraction_of_second = self._io.read_bits_int(24)
 
-
     @property
     def chk_body(self):
         if hasattr(self, '_m_chk_body'):
@@ -95,5 +88,3 @@ class Common(KaitaiStruct):
         self._m_chk_body = self._io.read_bytes((self.framesize - 2))
         self._io.seek(_pos)
         return self._m_chk_body if hasattr(self, '_m_chk_body') else None
-
-

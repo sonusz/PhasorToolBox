@@ -17,6 +17,6 @@ class Header(KaitaiStruct):
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
-        self.data1 = (self._io.read_bytes_full()).decode(u"UTF-8")
+        self.data = (self._io.read_bytes_full()).decode(u"UTF-8")
 
 

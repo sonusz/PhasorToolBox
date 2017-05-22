@@ -1,5 +1,5 @@
 meta:
-  id: synchrophasor_command
+  id: command
   endian: be
 seq:
   - id: cmd

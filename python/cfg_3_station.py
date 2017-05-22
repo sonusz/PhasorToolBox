@@ -158,11 +158,11 @@ class Cfg3Station(KaitaiStruct):
                 zero_sequence = 0
                 positive_sequence = 1
                 negative_sequence = 2
-                reserved = 3
+                reserved_011 = 3
                 phase_a = 4
                 phase_b = 5
                 phase_c = 6
-                reserved = 7
+                reserved_111 = 7
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
                 self._parent = _parent
