@@ -95,7 +95,7 @@ class Cfg2(KaitaiStruct):
                 self._parent = _parent
                 self._root = _root if _root else self
                 self.analog_input = self._io.read_u1()
-                self.conversion_factor = self._io.read_bits_int(24)
+                self.raw_conversion_factor = self._io.read_bits_int(24)
 
 
         class Chnam(KaitaiStruct):

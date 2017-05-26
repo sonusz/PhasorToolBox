@@ -193,7 +193,7 @@ types:
               Most significant byte: 0―single point-on-wave, 1―rms of 
               analog input, 2―peak of analog input, 5–64―reserved for future 
               definition; 65–255―user definable. 
-          - id: conversion_factor
+          - id: raw_conversion_factor
             type: b24
             doc: >
               Least significant bytes: A signed 24-bit word, user defined scaling.

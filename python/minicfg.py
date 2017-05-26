@@ -9,6 +9,7 @@ class MiniCfg(object):
         io = KaitaiStream(BytesIO(cfg_pkt))
         self._cfg_pkt = Common(io)
         self._type = self._cfg_pkt.sync.frame_type.name
+        print(self._type)
         self._cfg = self._cfg_pkt.data
         self.num_pmu = self._cfg.num_pmu
         self.time_base = self.TimeBase(self._cfg.time_base)
@@ -41,13 +42,25 @@ class MiniCfg(object):
         class Format(object):
             def __init__(self, _format):
                 self._format = _format
-                self.unused = self.unused.name
-                self.freq_data_type = self.freq_data_type.name
-                self.analogs_data_type = self.analogs_data_type.name
-                self.phasors_data_type = self.phasors_data_type.name
-                self.rectangular_or_polar = self.rectangular_or_polar.name
+                self.unused = self._format.unused
+                self.freq_data_type = self._format.freq_data_type.name[:]
+                self.analogs_data_type = self._format.analogs_data_type.name[:]
+                self.phasors_data_type = self._format.phasors_data_type.name[:]
+                self.rectangular_or_polar = self._format.rectangular_or_polar.name[:]
 
         class Phunit(object):
             def __init__(self, _phunit):
                 self._phunit = _phunit
                 self.conversion_factor = self._phunit.conversion_factor
+
+        class Anunit(object):
+            def __init__(self, _anunit):
+                self._anunit = _anunit
+                x = self._anunit.raw_conversion_factor
+                self.conversion_factor = x if x <=  8388607 else x - 16777215
+
+        class Digunit(object):
+            def __init__(self, _digunit):
+                self._digunit = _digunit
+                self.normal_status = self._digunit.normal_status
+                self.current_valid_inputs = self._digunit.current_valid_inputs

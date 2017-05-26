@@ -9,34 +9,40 @@ from timeit import default_timer as timer
 import cProfile
 
 
-class Synchrphasor(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, cfg_pkt: bytes = None):  # Add cfg
+class Synchrphasor(object):
+    def __init__(self, raw_byte: bytes = None, cfg_pkt: bytes = None):  # Add cfg
         """
 
         :type cfg_pkt: configuration packet raw data
         """
-        self._io = _io
-        self._parent = _parent
-        self._root = _root if _root else self
-        self._mini_cfg = MiniCfg(cfg_pkt)
+        self.raw_data = raw_byte
+        self.cfg_pkt = cfg_pkt
         self.message = []
-        if not self._cfg:
+        if self.raw_data:
+            self.parse()
+
+    def parse(self):
+        _io = KaitaiStream(BytesIO(self.raw_data))
+        if self.cfg_pkt:
+            self._mini_cfg = MiniCfg(self.cfg_pkt)
+        else:
+            self._mini_cfg = None
             print('Try parsing without configuration frame.')
-        while not self._io.is_eof():
-            pkt = Common(self._io, _mini_cfg = self._mini_cfg)
+        while not _io.is_eof():
+            pkt = Common(_io, _mini_cfg = self._mini_cfg)
             if (pkt.sync.frame_type.name == 'configuration_frame_2') or (pkt.sync.frame_type.name == 'configuration_frame_3'):
                 self._mini_cfg = MiniCfg(pkt.pkt)
             self.message.append(pkt)
+
 
 def parse_stream():
     file = open('/Users/s/Dropbox/SouceTree/PhasorToolBox/samples/stream.bin', 'rb')
     raw_data = file.read()
     t0 = timer()
-    stream = KaitaiStream(BytesIO(raw_data))
-    P = Synchrphasor(stream)
+    P = Synchrphasor(raw_data)
     t1 = timer()
     print('Time per message:', (t1 - t0)/len(P.message))
 
 if __name__ == '__main__':
-    #cProfile.run('parse_stream()')
-    parse_stream()
+    cProfile.run('parse_stream()')
+    #parse_stream()

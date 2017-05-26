@@ -23,6 +23,7 @@ class Common(KaitaiStruct):
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
+        self._pkt_pos = self._io.pos()
         self._mini_cfg = _mini_cfg
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
@@ -142,7 +143,7 @@ class Common(KaitaiStruct):
             return self._m_pkt if hasattr(self, '_m_pkt') else None
 
         _pos = self._io.pos()
-        self._io.seek(0)
+        self._io.seek(self._pkt_pos)
         self._m_pkt = self._io.read_bytes(self.framesize)
         self._io.seek(_pos)
         return self._m_pkt if hasattr(self, '_m_pkt') else None
