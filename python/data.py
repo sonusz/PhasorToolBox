@@ -52,7 +52,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type
+                _on = self._parent._station.format.freq_data_type.name
                 if _on == 'int':
                     self.freq = self._root.PmuData.Freq.Int(self._io, self, self._root)
                 elif _on == 'float':
@@ -172,7 +172,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type
+                _on = self._parent._station.format.freq_data_type.name
                 if _on == 'int':
                     self.dfreq = self._root.PmuData.Dfreq.Int(self._io, self, self._root)
                 elif _on == 'float':
@@ -217,7 +217,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.phasors_data_type
+                _on = self._parent._station.format.phasors_data_type.name
                 if _on == 'int':
                     self.phasors = self._root.PmuData.Phasors.Int(self._io, self, self._root, self._phunit.conversion_factor)
                 elif _on == 'float':
@@ -229,7 +229,7 @@ class Data(KaitaiStruct):
                     self._io = _io
                     self._parent = _parent
                     self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar
+                    _on = self._parent._parent._station.format.rectangular_or_polar.name
                     if _on == 'rectangular':
                         self.phasors = self._root.PmuData.Phasors.Int.Rectangular(self._io, self, self._root, self._conversion_factor)
                     elif _on == 'polar':
@@ -321,7 +321,7 @@ class Data(KaitaiStruct):
                     self._io = _io
                     self._parent = _parent
                     self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar
+                    _on = self._parent._parent._station.format.rectangular_or_polar.name
                     if _on == 'rectangular':
                         self.phasors = self._root.PmuData.Phasors.Float.Rectangular(self._io, self, self._root)
                     elif _on == 'polar':
@@ -388,7 +388,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.analogs_data_type
+                _on = self._parent._station.format.analogs_data_type.name
                 if _on == 'int':
                     self.analog = self._root.PmuData.Analog.Int(self._io, self, self._root, self._anunit.conversion_factor)
                 elif _on == 'float':

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
-import sys
+from pkg_resources import parse_version
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
-from collections import defaultdict
 from common import Common
-from timeit import default_timer as timer
-import cProfile
+
+if parse_version(ks_version) < parse_version('0.7'):
+    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+
+
 
 
 class Synchrphasor(object):
@@ -34,16 +36,5 @@ class Synchrphasor(object):
                 io = KaitaiStream(BytesIO(pkt.pkt))
                 self._cfg = Common(io).data
             self.message.append(pkt)
+        return self.message
 
-
-def parse_stream():
-    file = open('/Users/s/Dropbox/SouceTree/PhasorToolBox/samples/stream.bin', 'rb')
-    raw_data = file.read()
-    t0 = timer()
-    P = Synchrphasor(raw_data)
-    t1 = timer()
-    print('Time per message:', (t1 - t0)/len(P.message))
-
-if __name__ == '__main__':
-    cProfile.run('parse_stream()')
-    #parse_stream()
