@@ -4,7 +4,6 @@ import sys
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from collections import defaultdict
 from common import Common
-from minicfg import MiniCfg
 from timeit import default_timer as timer
 import cProfile
 
@@ -24,14 +23,16 @@ class Synchrphasor(object):
     def parse(self):
         _io = KaitaiStream(BytesIO(self.raw_data))
         if self.cfg_pkt:
-            self._mini_cfg = MiniCfg(self.cfg_pkt)
+            io = KaitaiStream(BytesIO(self.cfg_pkt))
+            self._cfg = Common(io).data
         else:
-            self._mini_cfg = None
+            self._cfg = None
             print('Try parsing without configuration frame.')
         while not _io.is_eof():
-            pkt = Common(_io, _mini_cfg = self._mini_cfg)
+            pkt = Common(_io, _cfg = self._cfg)
             if (pkt.sync.frame_type.name == 'configuration_frame_2') or (pkt.sync.frame_type.name == 'configuration_frame_3'):
-                self._mini_cfg = MiniCfg(pkt.pkt)
+                io = KaitaiStream(BytesIO(pkt.pkt))
+                self._cfg = Common(io).data
             self.message.append(pkt)
 
 

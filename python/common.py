@@ -19,23 +19,23 @@ from command import Command
 
 
 class Common(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _mini_cfg=None):
+    def __init__(self, _io, _parent=None, _root=None, _cfg=None):
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
         self._pkt_pos = self._io.pos()
-        self._mini_cfg = _mini_cfg
+        self._cfg = _cfg
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
-                                          self._mini_cfg.time_base if self._mini_cfg else None)
+                                          self._cfg.time_base if self._cfg else None)
         _on = self.sync.frame_type.name
         if _on == 'data_frame':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
-            self.data = Data(io, _mini_cfg = self._mini_cfg)
+            self.data = Data(io, _cfg = self._cfg)
             #self.data = self._io.read_bytes((self.framesize - 16))#
             #self.data = Data(self._io, _mini_cfg = self._mini_cfg)
         elif _on == 'command_frame':

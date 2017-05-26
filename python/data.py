@@ -15,14 +15,14 @@ if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
 class Data(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _mini_cfg = None):
-        self._mini_cfg = _mini_cfg
+    def __init__(self, _io, _parent=None, _root=None, _cfg = None):
+        self._cfg = _cfg
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
-        self.pmu_data = [None] * (self._mini_cfg.num_pmu)
-        for i in range(self._mini_cfg.num_pmu):
-            self.pmu_data[i] = self._root.PmuData(self._io, self, self._root, _station = self._mini_cfg.station[i])
+        self.pmu_data = [None] * (self._cfg.num_pmu)
+        for i in range(self._cfg.num_pmu):
+            self.pmu_data[i] = self._root.PmuData(self._io, self, self._root, _station = self._cfg.station[i])
 
 
     class PmuData(KaitaiStruct):
