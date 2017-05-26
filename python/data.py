@@ -4,6 +4,8 @@ import array
 import struct
 import zlib
 from enum import Enum
+
+import cmath
 from pkg_resources import parse_version
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
@@ -13,14 +15,14 @@ if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
 class Data(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _cfg = None):
-        self._cfg = _cfg
+    def __init__(self, _io, _parent=None, _root=None, _mini_cfg = None):
+        self._mini_cfg = _mini_cfg
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
-        self.pmu_data = [None] * (self._cfg.num_pmu)
-        for i in range(self._cfg.num_pmu):
-            self.pmu_data[i] = self._root.PmuData(self._io, self, self._root, _station = self._cfg.station[i])
+        self.pmu_data = [None] * (self._mini_cfg.num_pmu)
+        for i in range(self._mini_cfg.num_pmu):
+            self.pmu_data[i] = self._root.PmuData(self._io, self, self._root, _station = self._mini_cfg.station[i])
 
 
     class PmuData(KaitaiStruct):
@@ -32,12 +34,12 @@ class Data(KaitaiStruct):
             self.stat = self._root.PmuData.Stat(self._io, self, self._root)
             self.phasors = [None] * (self._station.phnmr)
             for i in range(self._station.phnmr):
-                self.phasors[i] = self._root.PmuData.Phasors(self._io, self, self._root)
+                self.phasors[i] = self._root.PmuData.Phasors(self._io, self, self._root, self._station.phunit[i])
 
             self.freq = self._root.PmuData.Freq(self._io, self, self._root)
             self.dfreq = self._root.PmuData.Dfreq(self._io, self, self._root)
             self.analog = [None] * (self._station.annmr)
-            for i in range(self._station.annmr):
+            for i in range(self._station.annmr, self._station.anunit[i]):
                 self.analog[i] = self._root.PmuData.Analog(self._io, self, self._root)
 
             self.digital = [None] * (self._station.dgnmr)
@@ -50,7 +52,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type.name
+                _on = self._parent._station.format.freq_data_type
                 if _on == 'int':
                     self.freq = self._root.PmuData.Freq.Int(self._io, self, self._root)
                 elif _on == 'float':
@@ -170,7 +172,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type.name
+                _on = self._parent._station.format.freq_data_type
                 if _on == 'int':
                     self.dfreq = self._root.PmuData.Dfreq.Int(self._io, self, self._root)
                 elif _on == 'float':
@@ -210,43 +212,107 @@ class Data(KaitaiStruct):
 
 
         class Phasors(KaitaiStruct):
-            def __init__(self, _io, _parent=None, _root=None):
+            def __init__(self, _io, _parent=None, _root=None, phunit = None):
+                self._phunit = phunit
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.phasors_data_type.name
+                _on = self._parent._station.format.phasors_data_type
                 if _on == 'int':
-                    self.phasors = self._root.PmuData.Phasors.Int(self._io, self, self._root)
+                    self.phasors = self._root.PmuData.Phasors.Int(self._io, self, self._root, self._phunit.conversion_factor)
                 elif _on == 'float':
                     self.phasors = self._root.PmuData.Phasors.Float(self._io, self, self._root)
 
             class Int(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io, _parent=None, _root=None, conversion_factor = None):
+                    self._conversion_factor = conversion_factor
                     self._io = _io
                     self._parent = _parent
                     self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar.name
+                    _on = self._parent._parent._station.format.rectangular_or_polar
                     if _on == 'rectangular':
-                        self.phasors = self._root.PmuData.Phasors.Int.Rectangular(self._io, self, self._root)
+                        self.phasors = self._root.PmuData.Phasors.Int.Rectangular(self._io, self, self._root, self._conversion_factor)
                     elif _on == 'polar':
-                        self.phasors = self._root.PmuData.Phasors.Int.Polar(self._io, self, self._root)
+                        self.phasors = self._root.PmuData.Phasors.Int.Polar(self._io, self, self._root, self._conversion_factor)
 
                 class Rectangular(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
+                    def __init__(self, _io, _parent=None, _root=None, conversion_factor = None):
+                        self._conversion_factor = conversion_factor
                         self._io = _io
                         self._parent = _parent
                         self._root = _root if _root else self
                         self.raw_real = self._io.read_s2be()
                         self.raw_imaginary = self._io.read_s2be()
 
+                    @property
+                    def real(self):
+                        if hasattr(self, '_m_real'):
+                            return self._m_real if hasattr(self, '_m_real') else None
+
+                        self._m_real = self.raw_real * self._conversion_factor
+                        return self._m_real if hasattr(self, '_m_real') else None
+
+                    @property
+                    def imaginary(self):
+                        if hasattr(self, '_m_imaginary'):
+                            return self._m_imaginary if hasattr(self, '_m_imaginary') else None
+
+                        self._m_imaginary = self.raw_imaginary * self._conversion_factor
+                        return self._m_imaginary if hasattr(self, '_m_imaginary') else None
+
+                    @property
+                    def magnitude(self):
+                        if hasattr(self, '_m_magnitude'):
+                            return self._m_magnitude if hasattr(self, '_m_magnitude') else None
+
+                        self._m_magnitude, self._m_angle = cmath.polar(complex(self.real,self.imaginary))
+                        return self._m_magnitude if hasattr(self, '_m_magnitude') else None
+
+                    @property
+                    def angle(self):
+                        if hasattr(self, '_m_angle'):
+                            return self._m_angle if hasattr(self, '_m_angle') else None
+
+                        self._m_magnitude, self._m_angle = cmath.polar(complex(self.real, self.imaginary))
+                        return self._m_angle if hasattr(self, '_m_angle') else None
+
+
 
                 class Polar(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
+                    def __init__(self, _io, _parent=None, _root=None,  conversion_factor = None):
+                        self._conversion_factor = conversion_factor
                         self._io = _io
                         self._parent = _parent
                         self._root = _root if _root else self
                         self.raw_magnitude = self._io.read_u2be()
                         self.angle = self._io.read_s2be()
+
+                    @property
+                    def real(self):
+                        if hasattr(self, '_m_real'):
+                            return self._m_real if hasattr(self, '_m_real') else None
+
+                        z = cmath.rect(self.magnitude, self.angle)
+                        self._m_real, self._m_imaginary = z.real, z.img
+                        return self._m_real if hasattr(self, '_m_real') else None
+
+                    @property
+                    def imaginary(self):
+                        if hasattr(self, '_m_imaginary'):
+                            return self._m_imaginary if hasattr(self, '_m_imaginary') else None
+
+                        z = cmath.rect(self.magnitude, self.angle)
+                        self._m_real, self._m_imaginary = z.real, z.img
+                        return self._m_imaginary if hasattr(self, '_m_imaginary') else None
+
+                    @property
+                    def magnitude(self):
+                        if hasattr(self, '_m_magnitude'):
+                            return self._m_magnitude if hasattr(self, '_m_magnitude') else None
+
+                        self._m_magnitude = self.raw_magnitude * self._conversion_factor
+                        return self._m_magnitude if hasattr(self, '_m_magnitude') else None
+
 
 
 
@@ -255,7 +321,7 @@ class Data(KaitaiStruct):
                     self._io = _io
                     self._parent = _parent
                     self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar.name
+                    _on = self._parent._parent._station.format.rectangular_or_polar
                     if _on == 'rectangular':
                         self.phasors = self._root.PmuData.Phasors.Float.Rectangular(self._io, self, self._root)
                     elif _on == 'polar':
@@ -318,7 +384,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                _on = self._parent._station.format.analogs_data_type.name
+                _on = self._parent._station.format.analogs_data_type
                 if _on == 'int':
                     self.analog = self._root.PmuData.Analog.Int(self._io, self, self._root)
                 elif _on == 'float':
@@ -330,6 +396,16 @@ class Data(KaitaiStruct):
                     self._parent = _parent
                     self._root = _root if _root else self
                     self.raw_analog = self._io.read_bits_int(16)
+
+                @property
+                def analog(self):
+                    if hasattr(self, '_m_analog'):
+                        return self._m_analog if hasattr(self, '_m_analog') else None
+
+                    self._m_analog = self.raw_analog *
+                    return self._m_analog if hasattr(self, '_m_analog') else None
+
+
 
 
             class Float(KaitaiStruct):

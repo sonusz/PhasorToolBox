@@ -19,24 +19,24 @@ from command import Command
 
 
 class Common(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _cfg=None):
+    def __init__(self, _io, _parent=None, _root=None, _mini_cfg=None):
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
-        self._cfg = _cfg
+        self._mini_cfg = _mini_cfg
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
-                                          self._cfg.time_base.time_base if self._cfg else None)
+                                          self._mini_cfg.time_base if self._mini_cfg else None)
         _on = self.sync.frame_type.name
         if _on == 'data_frame':
-            #self._raw_data = self._io.read_bytes((self.framesize - 16))
-            #io = KaitaiStream(BytesIO(self._raw_data))
-            #self.data = Data(io, _cfg = self._cfg)
+            self._raw_data = self._io.read_bytes((self.framesize - 16))
+            io = KaitaiStream(BytesIO(self._raw_data))
+            self.data = Data(io, _mini_cfg = self._mini_cfg)
             #self.data = self._io.read_bytes((self.framesize - 16))#
-            self.data = Data(self._io, _cfg = self._cfg)
+            #self.data = Data(self._io, _mini_cfg = self._mini_cfg)
         elif _on == 'command_frame':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
@@ -135,3 +135,14 @@ class Common(KaitaiStruct):
         self._m_chk_body = self._io.read_bytes((self.framesize - 2))
         self._io.seek(_pos)
         return self._m_chk_body if hasattr(self, '_m_chk_body') else None
+
+    @property
+    def pkt(self):
+        if hasattr(self, '_m_pkt'):
+            return self._m_pkt if hasattr(self, '_m_pkt') else None
+
+        _pos = self._io.pos()
+        self._io.seek(0)
+        self._m_pkt = self._io.read_bytes(self.framesize)
+        self._io.seek(_pos)
+        return self._m_pkt if hasattr(self, '_m_pkt') else None

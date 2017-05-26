@@ -58,6 +58,10 @@ instances:
     pos: 0x0
     size: framesize - 2
     doc: All data excluding the check sum bytes. CRC-CCITT(chk_body) == chk
+  pkt:
+    pos: 0x0
+    size: framesize
+    doc: All data in pkt.
 types:
   sync_word:
     seq:
