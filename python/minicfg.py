@@ -38,6 +38,7 @@ class MiniCfg(object):
             self.digunit = [None] * self.dgnmr
             for i in range(self.dgnmr):
                 self.digunit[i] = self.Digunit(self._station.digunit[i])
+            self.fnom = self._station.fnom
 
         class Format(object):
             def __init__(self, _format):
