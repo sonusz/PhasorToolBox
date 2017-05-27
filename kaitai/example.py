@@ -19,5 +19,5 @@ def parse_stream():
     print('Time per message:', (t1 - t0)/len(P.message))
 
 if __name__ == '__main__':
-    #cProfile.run('parse_stream()')
-    parse_stream()
+    cProfile.run('parse_stream()')
+    #parse_stream()
