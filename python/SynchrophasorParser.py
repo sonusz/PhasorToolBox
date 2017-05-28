@@ -6,7 +6,9 @@ from collections import defaultdict
 from common import Common
 from minicfg import MiniCfg
 from timeit import default_timer as timer
-import cProfile
+
+
+import cProfile, pstats, io
 
 
 class Synchrphasor(object):
@@ -19,9 +21,10 @@ class Synchrphasor(object):
         self.cfg_pkt = cfg_pkt
         self.message = []
         if self.raw_data:
-            self.parse()
+            self.parse(self.raw_data)
 
-    def parse(self):
+    def parse(self, raw_byte: bytes):
+        self.raw_data = raw_byte
         _io = KaitaiStream(BytesIO(self.raw_data))
         if self.cfg_pkt:
             self._mini_cfg = MiniCfg(self.cfg_pkt)
@@ -42,6 +45,7 @@ def parse_stream():
     for message in P.message:
         try:
             print(message.data.pmu_data[0].freq.freq.freq)
+            pass
         except Exception as e:
             print(e)
             pass
