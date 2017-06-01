@@ -4,12 +4,22 @@ import sys
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from common import Common
 
+class MiniCfgs(object):
+    def __init__(self):
+        self.mini_cfg = {}
+    def add_cfg(self, cfg_pkt):
+        _mini_cfg = MiniCfg(cfg_pkt)
+        self.mini_cfg[_mini_cfg._cfg_pkt.idcode] = _mini_cfg
+    def __len__(self):
+        return len(self.mini_cfg)
+
+
 class MiniCfg(object):
     def __init__(self, cfg_pkt):
         io = KaitaiStream(BytesIO(cfg_pkt))
         self._cfg_pkt = Common(io)
         self._type = self._cfg_pkt.sync.frame_type.name
-        print(self._type)
+        print(self._type, ' received.')
         self._cfg = self._cfg_pkt.data
         self.num_pmu = self._cfg.num_pmu
         self.time_base = self.TimeBase(self._cfg.time_base)
