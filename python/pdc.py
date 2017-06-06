@@ -35,6 +35,7 @@ class SmartPDC(object):
         while self.status == 'on':
             try:
                 data = self._in_q.get(timeout = self.timeout)
+                print('Time spend in Queue:', timer() - data['timer'])
                 t1 = timer()
                 _time_tag = float(data['soc'])
                 self.buf[_time_tag][data['idcode']] = data['freq']
@@ -45,6 +46,7 @@ class SmartPDC(object):
                         del self.buf[self._buf_index[0]]
                         del self._buf_index[0]
                 print('Time to sort:', timer() - t1)
+                print('Total time on one packet:', timer() - data['Arrive_time'])
             except queue.Empty:
                 pass
         print('PDC stopped.')
@@ -108,18 +110,20 @@ class Client(object):
         while self.status == 'on':
             try:
                 _header = self.sock.recv(4)
-                #t0 = timer()
+                tZero = timer()
+                t0 = timer()
                 raw_pkt = _header + self.sock.recv(int.from_bytes(_header[2:4], byteorder='big'))
                 messages = self.parser.parse(raw_pkt) # Right now, always parse and try to get frequency from station 0
-                #print('Time to parse:',timer() - t0)
+                print('Time to parse:',timer() - t0)
                 try:
+                    t0 = timer()
                     soc = str(messages[0].soc)+'.'+str(messages[0].fracsec.raw_fraction_of_second)
                     idcode = messages[0].idcode
                     freq = messages[0].data.pmu_data[0].freq.freq.freq
                     print(soc,idcode,freq)
                     if freq:
-                        q.put({'soc': soc, 'idcode': idcode, 'freq': freq})
-                    pass
+                        q.put({'Arrive_time': tZero, 'soc': soc, 'idcode': idcode, 'freq': freq, 'timer':timer()})
+                    print('Time to insert to Queue:', timer() - t0)
                 except Exception as e:
                     print(e)
                     pass
