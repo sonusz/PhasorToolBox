@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 import cProfile, pstats, io
 
 def parse_stream():
-    file = open('/Users/s/Dropbox/SouceTree/PhasorToolBox/samples/stream.bin', 'rb')
+    file = open('/root/Dropbox/SouceTree/PhasorToolBox/samples/stream.bin', 'rb')
     raw_data = file.read()
     t0 = timer()
     p = Parser(raw_data)

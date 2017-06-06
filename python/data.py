@@ -1,4 +1,4 @@
-# This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
+# This is modified from a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
 import array
 import struct
@@ -15,7 +15,14 @@ if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
 class Data(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _mini_cfg = None):
+    def __init__(self, _io, _parent=None, _root=None, _mini_cfg = None): # Add  _mini_cfg
+        """
+
+        :param _io:
+        :param _parent:
+        :param _root:
+        :param _mini_cfg:
+        """
         self._mini_cfg = _mini_cfg
         self._io = _io
         self._parent = _parent

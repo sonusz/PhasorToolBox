@@ -18,16 +18,17 @@ class Parser(object):
             while not _io.is_eof():
                 pkt = Common(_io)
                 self._mini_cfgs.add_cfg(pkt.pkt)
-        self.message = []
         if self.raw_data:
             self.parse(self.raw_data)
 
     def parse(self, raw_byte: bytes):
+        message = []
         self.raw_data = raw_byte
         _io = KaitaiStream(BytesIO(self.raw_data))
         while not _io.is_eof():
             pkt = Common(_io, _mini_cfgs = self._mini_cfgs)
             if (pkt.sync.frame_type.name == 'configuration_frame_2') or (pkt.sync.frame_type.name == 'configuration_frame_3'):
                 self._mini_cfgs.add_cfg(pkt.pkt)
-            self.message.append(pkt)
+            message.append(pkt)
+        return message
 
