@@ -33,7 +33,7 @@ class Common(KaitaiStruct):
             self._mini_cfg = None
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
-                                          self._mini_cfg.time_base if self._mini_cfg else None)
+                                          self._mini_cfg.time_base.time_base if self._mini_cfg else None)
         _on = self.sync.frame_type.name
         if _on == 'data_frame':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
