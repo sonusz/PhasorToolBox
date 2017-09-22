@@ -2,7 +2,7 @@
 
 The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
 ### Performance:
-The average times take to parse a single packet is around 0.85 ms on a 2012 mac laptop.
+The average time takes to parse a single packet is around 0.85 ms on a 2012 MacBook.
 According to [IEEE C37.118.2-2011 Standard], the typical range of delay caused by PDC processing & alignment is 2 ms to 2+ s.
 
 To install and test the performance of the package on your device:
@@ -29,6 +29,7 @@ Create a parser and parse the bytes:
 my_parser = phasortoolbox.Parser() # Create a parser.
 measurement_data = my_parser.parse(binary_data) # Parse It!
 ```
+Function 'parse()' returns a list that contains packets constructed from the raw binary data.
 Then you can access the data, e.g., the frequency value of station two stored in packet 200:
 ```python
 print('Frequency measurement in packet 200:', \
@@ -36,7 +37,7 @@ print('Frequency measurement in packet 200:', \
 ```
 
 ### Some Features:
-The parser can store the configuration frames and parse the following measurement packet according to it.
+The parser can store the configuration frames and parse the later measurement packet according to it.
 A parser instance can parse multiple data streams. This is useful when multiple PMU streams are captured and stored in the same file. However, each data stream must have unique 'IDCODE'. The IDCODE is used to identify which configuration frame should be used to parse a data frame.
 
 ### Note:
