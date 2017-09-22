@@ -1,10 +1,16 @@
 # PhasorToolBox
 
 The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
-## Performance:
-The average times take to parse a single packet is around 0.8 ms on a 2012 mac laptop.
+### Performance:
+The average times take to parse a single packet is around 0.85 ms on a 2012 mac laptop.
 According to [IEEE C37.118.2-2011 Standard], the typical range of delay caused by PDC processing & alignment is 2 ms to 2+ s.
-To run the performance test on your device:
+
+To install and test the performance of the package on your device:
+```bash
+#!/usr/bin/env bash
+python setup.py install
+python parse_stream.py stream.bin
+```
 
 ### Parse a packet on the fly:
 Will be updated when the PMU module is finished.
@@ -13,6 +19,7 @@ Will be updated when the PMU module is finished.
 ### Parse a binary stream:
 First lets read some bytes from previously recorded measurements:
 ```python
+#!/usr/bin/env python3
 import phasortoolbox
 with open('stream.bin', "rb") as f:
     binary_data = f.read()  
