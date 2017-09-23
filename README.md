@@ -1,6 +1,6 @@
 # PhasorToolBox
 
-The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
+The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser in python as well as tools that are easy to use and efficient for real-time parsing.
 ### Performance:
 The average time takes to parse a single packet is around 0.85 ms on a 2012 MacBook.
 According to [IEEE C37.118.2-2011 Standard], the typical range of delay caused by PDC processing & alignment is 2 ms to 2+ s.
