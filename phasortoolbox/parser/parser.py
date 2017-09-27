@@ -5,7 +5,7 @@ from .common import Common
 from .minicfg import MiniCfgs
 
 
-class Parser(object):
+class parser(object):
     def __init__(self, _bytes: bytes = None, raw_cfg_pkt: bytes = None):
         """
         This is used to parse bytes packet or stream.

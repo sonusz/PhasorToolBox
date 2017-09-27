@@ -119,7 +119,7 @@ class Common(KaitaiStruct):
             self.leap_second_direction = self._root.Fracsec.LeapSecondDirectionEnum(self._io.read_bits_int(1))
             self.leap_second_occurred = self._io.read_bits_int(1) != 0
             self.leap_second_pending = self._io.read_bits_int(1) != 0
-            self.time_quailty = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
+            self.time_quality = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
             self.raw_fraction_of_second = self._io.read_bits_int(24)
 
         @property
