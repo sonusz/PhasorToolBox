@@ -96,17 +96,20 @@ class command(message):
                         bytes as indicated by frame size, data user defined.
     """
 
-    def __new__(self, IDCODE=1,
+    def __new__(self, IDCODE=1, CMD='off', 
                 TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
                 TIME_BASE=16777215,
-                USER_DEF='0000', CMD='off', EXT=b''
+                USER_DEF='0000', EXT=b''
                 ):
+        SYNC = b'\xaaA'
+        if CMD == 'cfg3':
+            SYNC = b'\xaaB'
         return super().__new__(
-            self, SYNC=b'\xaaB', IDCODE=IDCODE,
+            self, SYNC=SYNC, IDCODE=IDCODE,
             TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,
             TIME_BASE=16777215,
             DATA=self._command_code(
-                self, USER_DEF, CMD) + EXT,
+                self, USER_DEF, CMD) + EXT
         )
 
     def _command_code(self, USER_DEF, CMD):
