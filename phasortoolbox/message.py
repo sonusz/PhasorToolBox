@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import time
 import binascii
 
@@ -118,7 +119,3 @@ class command(message):
         }
         return int('0000' + USER_DEF, 2).to_bytes(1, 'big') + \
             CommandCode[CMD].to_bytes(1, 'big')
-
-
-# my_msg = command(IDCODE=0, CMD='ext', EXT=b'User defined message')
-# print(P.parse(my_msg)[0].data.ext)

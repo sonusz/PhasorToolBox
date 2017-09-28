@@ -34,21 +34,35 @@ class parser(object):
         if raw_cfg_pkt:
             _io = KaitaiStream(BytesIO(raw_cfg_pkt))
             while not _io.is_eof():
-                pkt = Common(_io)
-                self._mini_cfgs.add_cfg(pkt.raw_pkt)
+                message = Common(_io)
+                self._mini_cfgs.add_cfg(message.raw_pkt)
 
     def parse(self, raw_byte: bytes):
-        """Parse synchrphasor messages
+        """Parse synchrphasor message stream
 
 
         """
-        message = []
+        stream = []
         self._raw_data = raw_byte
         _io = KaitaiStream(BytesIO(self._raw_data))
         while not _io.is_eof():
-            pkt = Common(_io, _mini_cfgs = self._mini_cfgs)
-            if (pkt.sync.frame_type.name == 'configuration_frame_2') or (pkt.sync.frame_type.name == 'configuration_frame_3'):
-                self._mini_cfgs.add_cfg(pkt.raw_pkt)
-            message.append(pkt)
-        return message
+            message = Common(_io, _mini_cfgs=self._mini_cfgs)
+            if (message.sync.frame_type.value == 3) or\
+                    (message.sync.frame_type.value == 5):
+                #  'configuration_frame_2' or  'configuration_frame_3'
+                self._mini_cfgs.add_cfg(message.raw_pkt)
+            stream.append(message)
+        return stream
 
+    def parse_message(self, raw_byte: bytes):
+        """Parse a synchrphasor message
+
+        """
+        self._raw_data = raw_byte
+        _io = KaitaiStream(BytesIO(self._raw_data))
+        message = Common(_io, _mini_cfgs=self._mini_cfgs)
+        if (message.sync.frame_type.value == 3) or\
+                (message.sync.frame_type.value == 5):
+            #  'configuration_frame_2' or  'configuration_frame_3'
+            self._mini_cfgs.add_cfg(message.raw_pkt)
+        return message

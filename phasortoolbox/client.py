@@ -1,40 +1,121 @@
 #!/usr/bin/env python3
 
+import asyncio
+from message import command
+from parser import parser
 
-class Client(object):
-    """
-    Connects to any devises that follows IEEE Std C37.118.2-2011.
+    """A synchrphaor protocol connection clinet.
+
+    Connects to any devices that follow IEEE Std C37.118.2-2011, send
+    commands, and receiving data.
     According to IEEE Std C37.118.2-2011 'The device providing data is the
     server and the device receiving data is the client.'
-    tcpServer = {
-        'mode' : 'tcp'
-        'IDCODE' : '0'
-        'server_ip' : '10.0.0.1'
-        'server_port' : '4712'
-        'client_port' : 'Auto'
-        }
-    udpServer = {
-        'mode' : 'udp'
-        'IDCODE' : '0'
-        'server_ip' : '10.0.0.1'
-        'server_port' : '4713'
-        'client_port' : 'Auto'
-        }
-    tcpudpServer = {
-        'mode' : 'tcpudp'
-        'IDCODE' : '0'
-        'server_ip' : '10.0.0.1'
-        'server_tcp_port' : '4712'
-        'client_tcp_port' : 'Auto'
-        'server_udp_port' : '4713'
-        'client_udp_port' : '4713'
-        }
-    spontaneousServer = {
-        'mode' : 'spontaneous'
-        'server_ip' : '10.0.0.1'
-        'client_port' : '4713'
-        }
+
+    Example:
+        tcpServer = {
+            'MODE' : 'TCP'
+            'IDCODE' : 1
+            'SERVER_IP' : '10.0.0.1'
+            'SERVER_TCP_PORT' : 4712
+            'CLIENT_TCP_PORT' : 'AUTO'
+            }
+        udpServer = {
+            'MODE' : 'UDP'
+            'IDCODE' : 1
+            'SERVER_IP' : '10.0.0.1'
+            'SERVER_UDP_PORT' : 4713
+            'CLIENT_UDP_PORT' : 'AUTO'
+            }
+        tcpudpServer = {
+            'MODE' : 'TCPUDP'
+            'IDCODE' : 1
+            'SERVER_IP' : '10.0.0.1'
+            'SERVER_TCP_PORT' : 4712
+            'CLIENT_TCP_PORT' : 'AUTO'
+            'SERVER_UDP_PORT' : 4713
+            'CLIENT_UDP_PORT' : 4713
+            }
+        spontaneousServer = {
+            'MODE' : 'SPON'
+            'IDCODE' : 1
+            'SERVER_IP' : '10.0.0.1'
+            'SERVER_UDP_PORT' : 4713
+            'CLIENT_UDP_PORT' : 4713
+            }
+
+        Client(**tcpServer)
     """
+
+
+class client(object):
+    def __init__(self,
+                 MODE='tcp',
+                 IDCODE=1,
+                 SERVER_IP='10.0.0.1',
+                 SERVER_TCP_PORT=4712,
+                 CLIENT_TCP_PORT='AUTO',
+                 SERVER_UDP_PORT=4713,
+                 CLIENT_UDP_PORT='AUTO',):
+        self.MODE = MODE
+        self.IDCODE = IDCODE
+        self.SERVER_IP = SERVER_IP
+        self.SERVER_TCP_PORT = SERVER_TCP_PORT
+        self.CLIENT_TCP_PORT = CLIENT_TCP_PORT
+        self.SERVER_UDP_PORT = SERVER_UDP_PORT
+        self.CLIENT_UDP_PORT = CLIENT_UDP_PORT
+        self.loop = asyncio.get_event_loop()
+        if self.MODE == 'TCP':
+            self.coro = self.loop.create_connection(
+                lambda: self._tcp(self.loop, self.IDCODE), self.SERVER_IP,
+                self.SERVER_TCP_PORT)
+        loop.run_until_complete(self.coro)
+        loop.run_forever()
+        loop.close()
+
+    class _tcp(asyncio.Protocol):
+        def __init__(self, loop, IDCODE=1):
+            self.loop = loop
+            self.IDCODE = IDCODE
+
+        def connection_made(self, transport):
+            transport.write(command(IDCODE=self.IDCODE, CMD='off'))
+            print('Stream', self.IDCODE, 'transmision off')
+
+        def data_received(self, data):
+            print('Data received: {!r}'.format(data.decode()))
+
+        def connection_lost(self, exc):
+            print('The server closed the connection')
+            print('Stop the event loop')
+            self.loop.stop()
+
+    def __init__(self, **kwargs):
+        self.loop = asyncio.get_event_loop()
+        self.tsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.usock =
+        if kwargs['mode'] == 'tcp':
+            self._tcp(**kwargs)
+        pass
+
+    def connect(self):
+
+    def close(self):
+        if (not self.mode == 'spontaneous') and self.transmision == 'on':
+            self.send_command('off')
+            print('Stream ', self.IDCODE, 'transmision off.')
+        self.disconnect()
+
+    def stransmit(self):
+        self.loop()
+        try:
+            pass
+        finally:
+            self.close()
+            pass
+
+    def _tcp(self, **kwargs):
+
+    def _udp(self, **kwargs):
 
     def __init__(self, ip='127.0.0.1', idcode=0, mode='tcp', parse=True):
         self.ip = ip
