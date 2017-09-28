@@ -32,7 +32,7 @@ class message(bytes):
 
     def __new__(
             self, SYNC=b'\xaa\x00', IDCODE=1,
-            TIME=time.time(), TQ_FLAGS='0000', MSG_TQ='1111',
+            TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
             TIME_BASE=16777215, DATA=b''):
         FRAMESIZE = (len(DATA) + 16).to_bytes(2, 'big')
         SOC_FRACSEC = self.soc_fracsec(
@@ -48,6 +48,8 @@ class message(bytes):
         """
         Check IEEE Std C37.118.2-2011 Table 3 Table 4 for Time quality flags
         """
+        if TIME == 'NOW':
+            TIME = time.time()
         return int(TIME).to_bytes(4, 'big') \
             + int(TIME_QUALITY_FLAGS, 2).to_bytes(1, 'big') \
             + int(TIME % 1 * TIME_BASE).to_bytes(3, 'big')
@@ -95,7 +97,7 @@ class command(message):
     """
 
     def __new__(self, IDCODE=1,
-                TIME=time.time(), TQ_FLAGS='0000', MSG_TQ='1111',
+                TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
                 TIME_BASE=16777215,
                 USER_DEF='0000', CMD='off', EXT=b''
                 ):
