@@ -29,7 +29,6 @@ class message(bytes):
                       MSG_TQ). Defaults to '1111'
         TIME_BASE (int): TIME_BASE. Defaults to 16777215.
     """
-
     def __new__(
             self, SYNC=b'\xaa\x01', IDCODE=1,
             TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
@@ -55,22 +54,15 @@ class command(message):
         synchrophasor message.
 
     Example:
-        my_msg = command(IDCODE=0, CMD='on') # Turn on transmission of data
-        frames.
-        my_msg = command(IDCODE=0, CMD='ext', EXT = b'User defined message')
-        # An extended command frame with user defined message.
+        my_msg = command(1,'on') # Data stream 1 turn on transmission.
+        my_msg = command(IDCODE=2, CMD='off') # Data stream 2 turn off
+        transmission.
+        my_msg = command(IDCODE=3, CMD='ext', EXT = b'User defined message')
+        #  Data stream 3 send extended command frame with user defined message.
 
     Args:
         IDCODE (int)    :Data stream ID number. Defaults to 1. 1–65534 (0 and
         65535 are reserved).
-        TIME (float)    :Epoch time. Defaults to current time.
-        TQ_FLAGS (str)  :Four bytes string indicates time quality flags.
-                        Defaults to '0000'
-        MSG_TQ (str)    :Four bytes string indicates message time quality (
-                        MSG_TQ). Defaults to '1111'
-        TIME_BASE (int) :TIME_BASE. Defaults to 16777215.
-        USER_DEF (str)  :Four bytes string codes designated by user. Defaults
-                        to '0000'
         CMD (str)       :Commands designated by user.
                         Options are:
                             'off' :Turn off transmission of data frames.
@@ -80,28 +72,35 @@ class command(message):
                             'cfg2':Send CFG-2 frame.
                             'cfg3':Send CFG-3 frame (optional command).
                             'ext':Extended frame.
+        TIME (float)    :Epoch time. Defaults to current time.
+        TQ_FLAGS (str)  :Four bytes string indicates time quality flags.
+                        Defaults to '0000'
+        MSG_TQ (str)    :Four bytes string indicates message time quality (
+                        MSG_TQ). Defaults to '1111'
+        TIME_BASE (int) :TIME_BASE. Defaults to 16777215.
+        USER_DEF (str)  :Four bytes string codes designated by user. Defaults
+                        to '0000'
         EXT (bytes)     :Extended frame data, 16-bit words, 0 to 65518
                         bytes as indicated by frame size, data user defined.
     """
-
+    CommandCode = {
+        'off': 1,
+        'on': 2,
+        'hdr': 3,
+        'cfg1': 4,
+        'cfg2': 5,
+        'cfg3': 6,
+        'ext': 8
+    }
     def __new__(self, IDCODE=1, CMD='off',
                 TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
                 TIME_BASE=16777215,
                 USER_DEF='0000', EXT=b''
                 ):
-        CommandCode = {
-            'off': 1,
-            'on': 2,
-            'hdr': 3,
-            'cfg1': 4,
-            'cfg2': 5,
-            'cfg3': 6,
-            'ext': 8
-        }
-        return super().__new__(
+        return super(command, self).__new__(
             self, SYNC=b'\xaaA', IDCODE=IDCODE,
             TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,
             TIME_BASE=16777215,
             DATA=b''.join((int('0000' + USER_DEF, 2).to_bytes(1, 'big'),
-                           CommandCode[CMD].to_bytes(1, 'big'), EXT))
+                           self.CommandCode[CMD].to_bytes(1, 'big'), EXT))
         )
