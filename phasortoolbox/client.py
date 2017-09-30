@@ -71,14 +71,13 @@ class Client(object):
                 self.SERVER_TCP_PORT)
         print('Connecting to',self.SERVER_IP,'...')
         self.transport, self.protocol = self.loop.run_until_complete(connect)
-
-
+        self.loop.run_forever()
     @asyncio.coroutine
     def transmit(self):
-        self.transport.write(command(IDCODE=self.IDCODE, CMD='on'))
+        self.transport.write(Command(IDCODE=self.IDCODE, CMD='on'))
+    @asyncio.coroutine
     def stop(self):
-        self.transport.write(command(IDCODE=self.IDCODE, CMD='off'))
-        self.transport.close()
+        self.transport.write(Command(IDCODE=self.IDCODE, CMD='off'))
     class _tcp(asyncio.Protocol):
         def __init__(self, loop, IDCODE=1):
             self.IDCODE = IDCODE
@@ -86,17 +85,17 @@ class Client(object):
         def connection_made(self, transport):
             print('Connected!')
         def data_received(self, data):
-            print('Data received: {!r}'.format(data.decode()))
+            print('Data received')
         def connection_lost(self, exc):
             print('The server closed the connection')
             print('Stop the event loop')
             self.loop.stop()
 
 
-pmu = client(SERVER_IP='130.127.88.146', SERVER_TCP_PORT=4722, IDCODE=1)
+pmu = Client(SERVER_IP='130.127.88.146', SERVER_TCP_PORT=4722, IDCODE=1)
 
 pmu.connect()
-pmu.transmit()pmu
+pmu.transmit()
 pmu.stop()
 
     def __init__(self, **kwargs):
