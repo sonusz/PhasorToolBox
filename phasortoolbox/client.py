@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import asyncio
-from message import command
-from parser import parser
+from phasortoolbox.message import Command
+from phasortoolbox import Parser
 
     """A synchrphaor protocol connection clinet.
 
@@ -47,9 +47,9 @@ from parser import parser
     """
 
 
-class client(object):
+class Client(object):
     def __init__(self,
-                 MODE='tcp',
+                 MODE='TCP',
                  IDCODE=1,
                  SERVER_IP='10.0.0.1',
                  SERVER_TCP_PORT=4712,
@@ -64,30 +64,40 @@ class client(object):
         self.SERVER_UDP_PORT = SERVER_UDP_PORT
         self.CLIENT_UDP_PORT = CLIENT_UDP_PORT
         self.loop = asyncio.get_event_loop()
+    def connect(self):
         if self.MODE == 'TCP':
-            self.coro = self.loop.create_connection(
+            connect= self.loop.create_connection(
                 lambda: self._tcp(self.loop, self.IDCODE), self.SERVER_IP,
                 self.SERVER_TCP_PORT)
-        loop.run_until_complete(self.coro)
-        loop.run_forever()
-        loop.close()
+        print('Connecting to',self.SERVER_IP,'...')
+        self.transport, self.protocol = self.loop.run_until_complete(connect)
 
+
+    @asyncio.coroutine
+    def transmit(self):
+        self.transport.write(command(IDCODE=self.IDCODE, CMD='on'))
+    def stop(self):
+        self.transport.write(command(IDCODE=self.IDCODE, CMD='off'))
+        self.transport.close()
     class _tcp(asyncio.Protocol):
         def __init__(self, loop, IDCODE=1):
-            self.loop = loop
             self.IDCODE = IDCODE
-
+            self.loop = loop
         def connection_made(self, transport):
-            transport.write(command(IDCODE=self.IDCODE, CMD='off'))
-            print('Stream', self.IDCODE, 'transmision off')
-
+            print('Connected!')
         def data_received(self, data):
             print('Data received: {!r}'.format(data.decode()))
-
         def connection_lost(self, exc):
             print('The server closed the connection')
             print('Stop the event loop')
             self.loop.stop()
+
+
+pmu = client(SERVER_IP='130.127.88.146', SERVER_TCP_PORT=4722, IDCODE=1)
+
+pmu.connect()
+pmu.transmit()pmu
+pmu.stop()
 
     def __init__(self, **kwargs):
         self.loop = asyncio.get_event_loop()

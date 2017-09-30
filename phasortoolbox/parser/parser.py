@@ -5,7 +5,7 @@ from .common import Common
 from .minicfg import MiniCfgs
 
 
-class parser(object):
+class Parser(object):
     """ A Parser that parses synchrphasor messages defined by IEEE Std
     C37.118.2-2011.
 

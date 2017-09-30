@@ -4,7 +4,7 @@ import time
 import binascii
 
 
-class message(bytes):
+class Message(bytes):
     """This object returns a synchrophasor message in bytes.
     It would be easier to use classes that inherited from this class,
     such as command(), data(), cfg2()
@@ -29,6 +29,7 @@ class message(bytes):
                       MSG_TQ). Defaults to '1111'
         TIME_BASE (int): TIME_BASE. Defaults to 16777215.
     """
+
     def __new__(
             self, SYNC=b'\xaa\x01', IDCODE=1,
             TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
@@ -45,7 +46,7 @@ class message(bytes):
         return super(message, self).__new__(self, raw_data)
 
 
-class command(message):
+class Command(Message):
     """This object returns a command message in bytes.
     Note:
         This creates a Version 1 (0001) command message defined by IEEE Std
@@ -58,7 +59,8 @@ class command(message):
         my_msg = command(IDCODE=2, CMD='off') # Data stream 2 turn off
         transmission.
         my_msg = command(IDCODE=3, CMD='ext', EXT = b'User defined message')
-        #  Data stream 3 send extended command frame with user defined message.
+        # Send extended command frame with user defined message to the source
+        # of Data stream 3.
 
     Args:
         IDCODE (int)    :Data stream ID number. Defaults to 1. 1–65534 (0 and
@@ -92,6 +94,7 @@ class command(message):
         'cfg3': 6,
         'ext': 8
     }
+
     def __new__(self, IDCODE=1, CMD='off',
                 TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
                 TIME_BASE=16777215,

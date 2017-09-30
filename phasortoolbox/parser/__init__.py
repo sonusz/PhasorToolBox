@@ -1,3 +1,3 @@
 #!/usr/bin/env python3
 
-from .parser import parser
+from .parser import Parser
