@@ -43,7 +43,7 @@ class Message(bytes):
         raw_data = b''.join((SYNC, FRAMESIZE,
                              IDCODE.to_bytes(2, 'big'), SOC_FRACSEC, DATA))
         raw_data += binascii.crc_hqx(raw_data, -1).to_bytes(2, 'big')
-        return super(message, self).__new__(self, raw_data)
+        return super(Message, self).__new__(self, raw_data)
 
 
 class Command(Message):
