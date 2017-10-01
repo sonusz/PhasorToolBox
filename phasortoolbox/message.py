@@ -100,7 +100,7 @@ class Command(Message):
                 TIME_BASE=16777215,
                 USER_DEF='0000', EXT=b''
                 ):
-        return super(command, self).__new__(
+        return super(Command, self).__new__(
             self, SYNC=b'\xaaA', IDCODE=IDCODE,
             TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,
             TIME_BASE=16777215,
