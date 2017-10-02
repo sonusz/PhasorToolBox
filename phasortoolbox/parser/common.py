@@ -27,9 +27,9 @@ class Common(KaitaiStruct):
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
-        if _mini_cfgs:
+        try:
             self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
-        else:
+        except:
             self._mini_cfg = None
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
@@ -119,7 +119,7 @@ class Common(KaitaiStruct):
             self.leap_second_direction = self._root.Fracsec.LeapSecondDirectionEnum(self._io.read_bits_int(1))
             self.leap_second_occurred = self._io.read_bits_int(1) != 0
             self.leap_second_pending = self._io.read_bits_int(1) != 0
-            self.time_quailty = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
+            self.time_quality = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
             self.raw_fraction_of_second = self._io.read_bits_int(24)
 
         @property

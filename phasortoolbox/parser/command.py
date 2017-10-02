@@ -27,6 +27,6 @@ class Command(KaitaiStruct):
         self._parent = _parent
         self._root = _root if _root else self
         self.cmd = self._root.CommandCode(self._io.read_u2be())
-        self.extframe = self._io.read_bytes_full()
+        self.ext = self._io.read_bytes_full()
 
 
