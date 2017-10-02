@@ -27,9 +27,9 @@ class Common(KaitaiStruct):
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
-        if _mini_cfgs:
+        try:
             self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
-        else:
+        except:
             self._mini_cfg = None
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
