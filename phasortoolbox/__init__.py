@@ -2,3 +2,4 @@
 
 from .parser import Parser
 from .signal import Signal
+from .client import Client
