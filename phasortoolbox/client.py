@@ -1,229 +1,206 @@
 #!/usr/bin/env python3
 
+import socket
 import asyncio
+import functools
 from phasortoolbox.message import Command
 from phasortoolbox import Parser
+"""A synchrphaor protocol connection clinet.
 
-    """A synchrphaor protocol connection clinet.
+Connects to any devices that follow IEEE Std C37.118.2-2011, send
+commands, and receiving data.
+According to IEEE Std C37.118.2-2011 'The device providing data is the
+server and the device receiving data is the client.'
 
-    Connects to any devices that follow IEEE Std C37.118.2-2011, send
-    commands, and receiving data.
-    According to IEEE Std C37.118.2-2011 'The device providing data is the
-    server and the device receiving data is the client.'
+Examples:
 
-    Example:
-        tcpServer = {
-            'MODE' : 'TCP'
-            'IDCODE' : 1
-            'SERVER_IP' : '10.0.0.1'
-            'SERVER_TCP_PORT' : 4712
-            'CLIENT_TCP_PORT' : 'AUTO'
-            }
-        udpServer = {
-            'MODE' : 'UDP'
-            'IDCODE' : 1
-            'SERVER_IP' : '10.0.0.1'
-            'SERVER_UDP_PORT' : 4713
-            'CLIENT_UDP_PORT' : 'AUTO'
-            }
-        tcpudpServer = {
-            'MODE' : 'TCPUDP'
-            'IDCODE' : 1
-            'SERVER_IP' : '10.0.0.1'
-            'SERVER_TCP_PORT' : 4712
-            'CLIENT_TCP_PORT' : 'AUTO'
-            'SERVER_UDP_PORT' : 4713
-            'CLIENT_UDP_PORT' : 4713
-            }
-        spontaneousServer = {
-            'MODE' : 'SPON'
-            'IDCODE' : 1
-            'SERVER_IP' : '10.0.0.1'
-            'SERVER_UDP_PORT' : 4713
-            'CLIENT_UDP_PORT' : 4713
-            }
+    # To quickly test a remote host:
+    loop = asyncio.get_event_loop()
+    remote_pmu = Client(SERVER_IP='10.0.0.1',
+              SERVER_TCP_PORT=4712, IDCODE=1, loop=loop)
+    remote_pmu.connection_test()
 
-        Client(**tcpServer)
-    """
+    # An easy way to process a received message would be use function
+    # 'Client.transmit_callback()' to callback your function when a packet
+    # is received:
+
+    from datetime import datetime
+    from phasortoolbox import Parser
+
+
+    def your_print_time_tag_fun(raw_pkt, my_parser):
+        message = my_parser.parse_message(raw_pkt)
+        time_tag = float(message.soc) + \
+                    float(message.fracsec.fraction_of_second)
+        time_tag = datetime.utcfromtimestamp(
+            time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
+        print(time_tag)
+
+    def main():
+        my_parser = Parser()
+        try:
+            loop.run_until_complete(
+            remote_pmu.transmit_callback(your_print_time_tag_fun, my_parser))
+        except KeyboardInterrupt:
+            loop.run_until_complete(remote_pmu.cleanup())
+
+    if __name__ == '__main__':
+        main()
+
+
+    # Overwrite the transmit_callback() function:
+
+"""
 
 
 class Client(object):
     def __init__(self,
-                 MODE='TCP',
-                 IDCODE=1,
                  SERVER_IP='10.0.0.1',
                  SERVER_TCP_PORT=4712,
                  CLIENT_TCP_PORT='AUTO',
                  SERVER_UDP_PORT=4713,
-                 CLIENT_UDP_PORT='AUTO',):
-        self.MODE = MODE
+                 CLIENT_UDP_PORT='AUTO',
+                 MODE='TCP',
+                 IDCODE=1,
+                 loop=None,
+                 executor=None,
+                 parser=None
+                 ):
         self.IDCODE = IDCODE
         self.SERVER_IP = SERVER_IP
         self.SERVER_TCP_PORT = SERVER_TCP_PORT
         self.CLIENT_TCP_PORT = CLIENT_TCP_PORT
         self.SERVER_UDP_PORT = SERVER_UDP_PORT
         self.CLIENT_UDP_PORT = CLIENT_UDP_PORT
-        self.loop = asyncio.get_event_loop()
-    def connect(self):
-        if self.MODE == 'TCP':
-            connect= self.loop.create_connection(
-                lambda: self._tcp(self.loop, self.IDCODE), self.SERVER_IP,
-                self.SERVER_TCP_PORT)
-        print('Connecting to',self.SERVER_IP,'...')
-        self.transport, self.protocol = self.loop.run_until_complete(connect)
-        self.loop.run_forever()
-    @asyncio.coroutine
-    def transmit(self):
-        self.transport.write(Command(IDCODE=self.IDCODE, CMD='on'))
-    @asyncio.coroutine
-    def stop(self):
-        self.transport.write(Command(IDCODE=self.IDCODE, CMD='off'))
-    class _tcp(asyncio.Protocol):
-        def __init__(self, loop, IDCODE=1):
-            self.IDCODE = IDCODE
+        self.MODE = MODE
+        self.executor = executor
+        if loop:
             self.loop = loop
-        def connection_made(self, transport):
-            print('Connected!')
-        def data_received(self, data):
-            print('Data received')
-        def connection_lost(self, exc):
-            print('The server closed the connection')
-            print('Stop the event loop')
-            self.loop.stop()
-
-
-pmu = Client(SERVER_IP='130.127.88.146', SERVER_TCP_PORT=4722, IDCODE=1)
-
-pmu.connect()
-pmu.transmit()
-pmu.stop()
-
-    def __init__(self, **kwargs):
-        self.loop = asyncio.get_event_loop()
-        self.tsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.usock =
-        if kwargs['mode'] == 'tcp':
-            self._tcp(**kwargs)
-        pass
-
-    def connect(self):
-
-    def close(self):
-        if (not self.mode == 'spontaneous') and self.transmision == 'on':
-            self.send_command('off')
-            print('Stream ', self.IDCODE, 'transmision off.')
-        self.disconnect()
-
-    def stransmit(self):
-        self.loop()
-        try:
-            pass
-        finally:
-            self.close()
-            pass
-
-    def _tcp(self, **kwargs):
-
-    def _udp(self, **kwargs):
-
-    def __init__(self, ip='127.0.0.1', idcode=0, mode='tcp', parse=True):
-        self.ip = ip
-        self.idcode = idcode
-        self.mode = mode
-        # A Parser() can automatically parse received packet, and remember's
-        # the latest configurations.
-        self.ifparser = parser
-
-    def connect(self):
-        """
-        TCP client
-        :return: 
-        """
-
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (self.ip, self.port)
-        try:
-            self.sock.connect(server_address)
-            print('Connected to ', str(server_address))
-        except Exception as e:
-            print('Connection ', str(server_address), ' failed!')
-            print(e)
-            pass
-        return
-
-    def _tcp(self):
-        pass
-
-    def _udp(self):
-        pass
-
-    def _tcpudp(self):
-        pass
-
-    def _spontaneous(self):
-        pass
-
-        if mode == 'tcp':
-            self.port = 4712
-        elif mode == 'udp':
-            self.port = 4713
-        elif mode == 'tcpudp'
-
-        elif mode == 'spontaneous'
-            usock = socket.socket(
-                socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-            usock.bind(())
-
-    def transmit(self, q):
-        mp.Process(target=self._transmit,
-                   args=(q,)).start()
-
-    def _transmit(self, q):
-        """
-        q is a mp.Queue(), used to send collected data out.
-        :param q:
-        :return:
-        """
-        msg = command(idcode=self.idcode, cmd='off')
-        self.sock.sendall(msg)
-        msg = command(idcode=self.idcode, cmd='cfg2')
-        self.sock.sendall(msg)
-        msg = command(idcode=self.idcode, cmd='on')
-        self.sock.sendall(msg)
-        self.status = 'on'
-        while self.status == 'on':
-            try:
-                _header = self.sock.recv(4)
-                tZero = timer()
-                t0 = timer()
-                raw_pkt = _header + \
-                    self.sock.recv(int.from_bytes(
-                        _header[2:4], byteorder='big'))
-                # Right now, always parse and try to get frequency from station 0
-                messages = self.parser.parse(raw_pkt)
-                print('Time to parse:', timer() - t0)
+        else:
+            self.loop = asyncio.get_event_loop()
+        if parser:
+            self.parser = parser
+        else:
+            self.parser = Parser()
+        if self.MODE == 'TCP':
+            async def connect():
+                self.tsock = socket.socket(
+                    socket.AF_INET, socket.SOCK_STREAM)
+                self.tsock.setblocking(False)
+                self.server_address = (self.SERVER_IP, self.SERVER_TCP_PORT)
+                if self.CLIENT_TCP_PORT != 'AUTO':
+                    self.tsock.bind('', self.CLIENT_TCP_PORT)
                 try:
-                    t0 = timer()
-                    soc = str(messages[0].soc) + '.' + \
-                        str(messages[0].fracsec.raw_fraction_of_second)
-                    idcode = messages[0].idcode
-                    freq = messages[0].data.pmu_data[0].freq.freq.freq
-                    print(soc, idcode, freq)
-                    if freq:
-                        q.put({'Arrive_time': tZero, 'soc': soc,
-                               'idcode': idcode, 'freq': freq, 'timer': timer()})
-                    print('Time to insert to Queue:', timer() - t0)
+                    await self.loop.sock_connect(
+                        self.tsock, self.server_address)
                 except Exception as e:
+                    print('Connection', str(self.server_address),
+                          'failed. Please check IP and PORT settings')
+                    print('Exit the program and try again.')
                     print(e)
-                    pass
-            except Exception as e:
-                print(e)
-                self.close()
-                break
+                    raise
 
-    def close(self):
-        self.status = 'off'
-        msg = command(idcode=self.idcode, cmd='off')
-        self.sock.sendall(msg)
-        self.sock.close()
-        return
+            async def send_command(CMD):
+                await self.loop.sock_sendall(
+                    self.tsock, Command(self.IDCODE, CMD))
+
+            async def receive_data_message():
+                # header = await self.loop.sock_recv(self.tsock, 4)
+                # raw_pkt = await self.loop.sock_recv(
+                #    self.tsock, int.from_bytes(header[2:4], byteorder='big'))
+                return await self.loop.sock_recv(self.tsock, 2048)
+            receive_conf = receive_data_message
+            # No different under TCP mode
+
+            async def close_connection():
+                self.tsock.close()
+        self.connect = connect
+        self.send_command = send_command
+        self.receive_conf = receive_conf
+        self.receive_data_message = receive_data_message
+        self.close_connection = close_connection
+
+    async def transmit_callback(self, target, *args):
+        if not callable(target):
+            raise TypeError("target must be a callable, "
+                            "not {!r}".format(type(target)))
+        await self.connect()
+        await self.send_command('off')
+        await self.send_command('cfg2')
+        raw_pkt = await self.receive_conf()
+        self.loop.run_in_executor(
+            self.executor, functools.partial(target, raw_pkt, *args))
+        await self.send_command('on')
+        try:
+            while True:
+                raw_pkt = await self.receive_data_message()
+                self.loop.run_in_executor(
+                    self.executor, functools.partial(target, raw_pkt, *args))
+        except KeyboardInterrupt:
+            pass
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print("\n")
+            print(e)
+            print("Last packet received:", raw_pkt)
+            await self.cleanup()
+
+    async def _connection_test(self):
+        import sys
+        from datetime import datetime
+        from itertools import cycle
+        await self.connect()
+        print('Connected to', self.SERVER_IP)
+        try:
+            await self.send_command('off')
+            await self.send_command('cfg2')
+            try:
+                raw_pkt = await asyncio.wait_for(self.receive_conf(), 5)
+            except asyncio.TimeoutError:
+                print(
+                    'No response, Please check IDCODE setting.'
+                )
+                return
+            message = self.parser.parse_message(raw_pkt)
+            print(message.sync.frame_type.name,
+                  'received from', self.SERVER_IP)
+            await self.send_command('on')
+            print("Transmission ON. (Press 'Ctrl+C' to stop.)")
+            for char in cycle('|/-\\'):
+                raw_pkt = await self.receive_data_message()
+                message = self.parser.parse_message(raw_pkt)
+                time_tag = float(message.soc) + \
+                    float(message.fracsec.fraction_of_second)
+                time_tag = datetime.utcfromtimestamp(
+                    time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
+                freqlist = [str(
+                    self.parser.parse_message(raw_pkt)
+                    .data.pmu_data[i].freq) + 'Hz\t' for i in range(
+                    len(self.parser.parse_message(raw_pkt).data.pmu_data)
+                )]
+                status = char + time_tag + '\t' + ''.join(freqlist)
+                sys.stdout.write(status + "\r")
+                sys.stdout.flush()
+        except KeyboardInterrupt:
+            pass
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print("\n")
+            print(e)
+            print("Last packet received:", raw_pkt)
+            await self.cleanup()
+
+    async def cleanup(self):
+        print('\n')
+        await self.send_command('off')
+        print('Transmission OFF.')
+        await self.close_connection()
+        print('Connection to', self.SERVER_IP, 'closed.')
+
+    def connection_test(self):
+        try:
+            self.loop.run_until_complete(self._connection_test())
+        except KeyboardInterrupt:
+            self.loop.run_until_complete(self.cleanup())
