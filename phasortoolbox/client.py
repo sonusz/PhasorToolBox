@@ -207,5 +207,5 @@ class Client(object):
         except KeyboardInterrupt:
             pass
         finally:
-            self.loop.call_soon_threadsafe(task.cancel())
+            self.loop.call_soon_threadsafe(task.cancel)
             self.loop.run_until_complete(self.cleanup())
