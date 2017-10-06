@@ -184,7 +184,7 @@ class Client(object):
                 sys.stdout.write(status + "\r")
                 sys.stdout.flush()
         except KeyboardInterrupt:
-        pass
+            pass
         except asyncio.CancelledError:
             pass
         except Exception as e:
