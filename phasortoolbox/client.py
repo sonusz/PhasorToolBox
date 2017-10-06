@@ -107,9 +107,9 @@ class Client(object):
             async def receive_data_message():
                 raw_pkt = await self.loop.sock_recv(self.tsock, 4)
                 raw_pkt += await self.loop.sock_recv(
-                    self.tsock, int.from_bytes(header[2:4], byteorder='big'))
+                    self.tsock, int.from_bytes(
+                        raw_pkt[2:4], byteorder='big'))
                 return raw_pkt
-                #return await self.loop.sock_recv(self.tsock, 2048)
             receive_conf = receive_data_message
             # No different under TCP mode
 
