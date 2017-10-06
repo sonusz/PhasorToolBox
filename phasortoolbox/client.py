@@ -105,10 +105,11 @@ class Client(object):
                     self.tsock, Command(self.IDCODE, CMD))
 
             async def receive_data_message():
-                # header = await self.loop.sock_recv(self.tsock, 4)
-                # raw_pkt = await self.loop.sock_recv(
-                #    self.tsock, int.from_bytes(header[2:4], byteorder='big'))
-                return await self.loop.sock_recv(self.tsock, 2048)
+                raw_pkt = await self.loop.sock_recv(self.tsock, 4)
+                raw_pkt += await self.loop.sock_recv(
+                    self.tsock, int.from_bytes(header[2:4], byteorder='big'))
+                return raw_pkt
+                #return await self.loop.sock_recv(self.tsock, 2048)
             receive_conf = receive_data_message
             # No different under TCP mode
 
@@ -183,7 +184,7 @@ class Client(object):
                 sys.stdout.write(status + "\r")
                 sys.stdout.flush()
         except KeyboardInterrupt:
-            pass
+        pass
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -201,6 +202,10 @@ class Client(object):
 
     def connection_test(self):
         try:
-            self.loop.run_until_complete(self._connection_test())
+            task = self.loop.create_task(self._connection_test())
+            self.loop.run_forever()
         except KeyboardInterrupt:
+            pass
+        finally:
+            self.loop.call_soon_threadsafe(task.cancel())
             self.loop.run_until_complete(self.cleanup())
