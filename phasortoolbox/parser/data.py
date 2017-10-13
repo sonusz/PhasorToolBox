@@ -219,6 +219,23 @@ class Data(KaitaiStruct):
 
 
         class Phasors(KaitaiStruct):
+            @property
+            def real(self):
+                return self.phasors.phasors.real
+
+            @property
+            def imaginary(self):
+                return self.phasors.phasors.imaginary
+
+            @property
+            def imaginary(self):
+                return self.phasors.phasors.magnitude
+
+            @property
+            def imaginary(self):
+                return self.phasors.phasors.angle
+
+
             def __init__(self, _io, _parent=None, _root=None, _phunit = None):
                 self._phunit = _phunit
                 self._io = _io
