@@ -36,7 +36,7 @@ class PDC(object):
         from itertools import cycle
         for client in self._Clientlist:
             await client.connect()
-            print('Connected to', self.SERVER_IP)
+            print('Connected to', client.SERVER_IP)
         try:
             raw_stream = b''
             for client in self._Clientlist:
@@ -83,6 +83,10 @@ class PDC(object):
             print(e)
             print("Last packet received:", raw_pkt)
             await self.cleanup()
+
+    async def cleanup(self):
+        for client in self._Clientlist:
+            await client.cleanup()
 
     def connection_test(self):
         try:
