@@ -55,8 +55,8 @@ class PDC(object):
                       'received from', client.SERVER_IP)
                 await client.send_command('on')
             print("Transmission ON. (Press 'Ctrl+C' to stop.)")
-            raw_stream = b''
             for char in cycle('|/-\\'):
+                raw_stream = b''
                 for client in self._Clientlist:
                     raw_stream += await client.receive_data_message()
                 messages = self.parser.parse(raw_stream)
