@@ -67,9 +67,8 @@ class PDC(object):
                 freqlist = []
                 for message in messages:
                     freqlist += [str(
-                        self.parser.parse_message(raw_pkt)
-                        .data.pmu_data[i].freq) + 'Hz\t' for i in range(
-                        len(self.parser.parse_message(raw_pkt).data.pmu_data)
+                        message.data.pmu_data[i].freq) + 'Hz\t' for i in range(
+                        len(message.data.pmu_data)
                     )]
                 status = char + time_tag + '\t' + ''.join(freqlist)
                 sys.stdout.write(status + "\r")
