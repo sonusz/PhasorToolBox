@@ -43,7 +43,7 @@ class PDC(object):
                 await client.send_command('off')
                 await client.send_command('cfg2')
                 try:
-                    raw_pkt = await asyncio.wait_for(self.receive_conf(), 5)
+                    raw_pkt = await asyncio.wait_for(client.receive_conf(), 5)
                     raw_stream += await raw_pkt
                 except asyncio.TimeoutError:
                     print(
@@ -58,7 +58,7 @@ class PDC(object):
             raw_stream = b''
             for char in cycle('|/-\\'):
                 for client in self._Clientlist:
-                    raw_stream += await self.receive_data_message()
+                    raw_stream += await client.receive_data_message()
                 messages = self.parser.parse(raw_stream)
                 time_tag = float(messages[0].soc) + \
                     float(messages[0].fracsec.fraction_of_second)
