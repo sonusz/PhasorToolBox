@@ -1,3 +1,6 @@
 #!/usr/bin/env python3
 
-from ._parser import Parser
+from .parser import Parser
+from .signal import Signal
+from .client import Client
+

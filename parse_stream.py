@@ -3,7 +3,7 @@
 """
 Some examples as well as a simple performance test to parse C37.118 binary data stream using phasortoolbox.Parser module
 """
-
+import sys
 import time
 import phasortoolbox
 
@@ -13,7 +13,7 @@ def parse_test(binary_data):
 
 if __name__ == '__main__':
     print('Read binary data from file...')
-    with open('stream.bin', "rb") as f:
+    with open(sys.argv[1], "rb") as f:
         binary_data = f.read()
 
     print('Performance test...')

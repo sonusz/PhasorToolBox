@@ -1,0 +1,10 @@
+PING google.com (172.217.13.78): 56 data bytes
+
+--- google.com ping statistics ---
+2 packets transmitted, 2 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 25.985/27.152/28.319/1.167 ms
+PING hnd-jp-ping.vultr.com (108.61.201.151): 56 data bytes
+
+--- hnd-jp-ping.vultr.com ping statistics ---
+2 packets transmitted, 2 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 179.441/179.697/179.952/0.255 ms
