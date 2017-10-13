@@ -122,9 +122,6 @@ class Client(object):
         self.close_connection = close_connection
 
     async def transmit_callback(self, target, *args):
-        if not callable(target):
-            raise TypeError("target must be a callable, "
-                            "not {!r}".format(type(target)))
         await self.connect()
         await self.send_command('off')
         await self.send_command('cfg2')
@@ -132,6 +129,7 @@ class Client(object):
         self.loop.run_in_executor(
             self.executor, functools.partial(target, raw_pkt, *args))
         await self.send_command('on')
+        print("Transmission ON. (Press 'Ctrl+C' to stop.)")
         try:
             while True:
                 raw_pkt = await self.receive_data_message()
@@ -203,6 +201,19 @@ class Client(object):
     def connection_test(self):
         try:
             task = self.loop.create_task(self._connection_test())
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.loop.call_soon_threadsafe(task.cancel)
+            self.loop.run_until_complete(self.cleanup())
+
+    def run(self, target, *args):
+        if not callable(target):
+            raise TypeError("target must be a callable, "
+                            "not {!r}".format(type(target)))
+        try:
+            task = self.loop.create_task(self.transmit_callback(target, *args))
             self.loop.run_forever()
         except KeyboardInterrupt:
             pass
