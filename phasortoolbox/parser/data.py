@@ -228,11 +228,11 @@ class Data(KaitaiStruct):
                 return self.phasors.phasors.imaginary
 
             @property
-            def imaginary(self):
+            def magnitude(self):
                 return self.phasors.phasors.magnitude
 
             @property
-            def imaginary(self):
+            def angle(self):
                 return self.phasors.phasors.angle
 
 
