@@ -2,9 +2,11 @@
 
 The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
 ## Performance:
+
 The average times take to parse a single packet with the parser module is around 0.85 ms on a 2012 mac laptop.
 According to [IEEE C37.118.2-2011 Standard], the typical range of delay caused by PDC processing & alignment is 2 ms to 2+ s.
 The methods provided by the client module are coroutines. That makes it possible to connects to hundreds of PMUs/PDCs at the same time with minimal overhead.
+
 
 #### To install and test the performance of the package on your device:
 ```bash
@@ -109,6 +111,7 @@ The binary parser is created with the help of using [Kaitai Struct].
 ##### phasortoolbox.Client.receive_data_message():
 ##### phasortoolbox.Client.close_connection():
 ##### phasortoolbox.Client.cleanup():
+
 
 
 
