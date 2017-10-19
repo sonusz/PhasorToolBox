@@ -64,13 +64,15 @@ class Client(object):
                     host=self.SERVER_IP, port=self.SERVER_TCP_PORT)
 
             async def close():
-                self.cmd_transport.close()
+                if self.cmd_transport:
+                    self.cmd_transport.close()
         self.connect = connect
         self.close = close
 
     async def send_cmd(self, CMD):
-        self.cmd_transport.write(Command(self.IDCODE, CMD))
-        print('Command \"' + CMD + '\" sent to', self.SERVER_IP)
+        if self.cmd_transport:
+            self.cmd_transport.write(Command(self.IDCODE, CMD))
+            print('Command \"' + CMD + '\" sent to', self.SERVER_IP)
 
     async def run(self):
         await self.connect()
@@ -95,7 +97,9 @@ class Client(object):
             msg._arrtime = _arrtime
             msg._parse_time = _parse_time
         for q in self.output_list:
-            await q.put(msg)
+            for msg in msgs:
+                await q.put(msg)
+#        [await q.put(msg) for msg in msgs for q in self.output_list]
 
     async def clean_up(self):
         await self.send_cmd('off')
