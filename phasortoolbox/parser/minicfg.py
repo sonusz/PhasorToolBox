@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-import logging
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import Common
+
 
 class MiniCfgs(object):
     def __init__(self):
         self.mini_cfg = {}
+
     def add_cfg(self, _cfg_pkt_idcode, _cfg_pkt_data):
         self.mini_cfg[_cfg_pkt_idcode] = MiniCfg(_cfg_pkt_data)
-        logging.info(_mini_cfg._type, 'updated for data stream ID:', _mini_cfg._cfg_pkt.idcode)
 
 
 class MiniCfg(object):
@@ -66,7 +66,7 @@ class MiniCfg(object):
             def __init__(self, _anunit):
                 self._anunit = _anunit
                 x = self._anunit.raw_conversion_factor
-                self.conversion_factor = x if x <=  8388607 else x - 16777215
+                self.conversion_factor = x if x <= 8388607 else x - 16777215
 
         class Digunit(object):
             def __init__(self, _digunit):
