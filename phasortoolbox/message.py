@@ -36,13 +36,13 @@ class Message(bytes):
 
     def __new__(
         self,
+        TIME,
         SYNC=b'\xaa\x01',
         IDCODE=1,
         TQ_FLAGS='0000',
         MSG_TQ='1111',
         TIME_BASE=16777215,
         DATA=b'',
-        TIME: time.time()
     ):
         FRAMESIZE = (len(DATA) + 16).to_bytes(2, 'big')
 
@@ -126,9 +126,9 @@ class Command(Message):
         TIME = time.time()
         return super(Command, self).__new__(
             self,
+            TIME=TIME,
             SYNC=b'\xaaA',
             IDCODE=IDCODE,
-            TIME=TIME,
             TQ_FLAGS=TQ_FLAGS,
             MSG_TQ=MSG_TQ,
             TIME_BASE=16777215,
