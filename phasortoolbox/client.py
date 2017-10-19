@@ -91,11 +91,11 @@ class Client(object):
         # msgs = await _msgs_future
         msgs = self.parser.parse(data)
         _parse_time = time.time() - _arrtime
+        for msg in msgs:
+            msg._arrtime = _arrtime
+            msg._parse_time = _parse_time
         for q in self.output_list:
-            for msg in msgs:
-                msg._arrtime = _arrtime
-                msg._parse_time = _parse_time
-                await q.put(msg)
+            await q.put(msg)
 
     async def clean_up(self):
         await self.send_cmd('off')

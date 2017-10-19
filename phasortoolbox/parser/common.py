@@ -54,10 +54,10 @@ class Common(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Header(io)
         elif _on == 'configuration_frame_2':
-            self._mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
+            self._mini_cfgs.add_cfg(self.idcode, self.data)
         elif _on == 'configuration_frame_3':
             self._mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))

@@ -32,10 +32,7 @@ class Parser(object):
     def __init__(self, raw_cfg_pkt: bytes = None):
         self._mini_cfgs = MiniCfgs()
         if raw_cfg_pkt:
-            _io = KaitaiStream(BytesIO(raw_cfg_pkt))
-            while not _io.is_eof():
-                message = Common(_io)
-                self._mini_cfgs.add_cfg(message.raw_pkt)
+            self.parse(raw_cfg_pkt)
 
     def parse(self, raw_byte: bytes):
         """Parse synchrphasor message stream
