@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-
-import socket
+import time
 import asyncio
-import functools
+from concurrent import futures
+#import functools
 from phasortoolbox.message import Command
 from phasortoolbox import Parser
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 """A synchrphaor protocol connection clinet.
 
 Connects to any devices that follow IEEE Std C37.118.2-2011, send
@@ -19,53 +21,24 @@ Examples:
     remote_pmu = Client(SERVER_IP='10.0.0.1',
               SERVER_TCP_PORT=4712, IDCODE=1, loop=loop)
     remote_pmu.connection_test()
-
-    # An easy way to process a received message would be use function
-    # 'Client.transmit_callback()' to callback your function when a packet
-    # is received:
-
-    from datetime import datetime
-    from phasortoolbox import Parser
-
-
-    def your_print_time_tag_fun(raw_pkt, my_parser):
-        message = my_parser.parse_message(raw_pkt)
-        time_tag = float(message.soc) + \
-                    float(message.fracsec.fraction_of_second)
-        time_tag = datetime.utcfromtimestamp(
-            time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
-        print(time_tag)
-
-    def main():
-        my_parser = Parser()
-        try:
-            loop.run_until_complete(
-            remote_pmu.transmit_callback(your_print_time_tag_fun, my_parser))
-        except KeyboardInterrupt:
-            loop.run_until_complete(remote_pmu.cleanup())
-
-    if __name__ == '__main__':
-        main()
-
-
-    # Overwrite the transmit_callback() function:
-
 """
 
 
 class Client(object):
-    def __init__(self,
-                 SERVER_IP='10.0.0.1',
-                 SERVER_TCP_PORT=4712,
-                 CLIENT_TCP_PORT='AUTO',
-                 SERVER_UDP_PORT=4713,
-                 CLIENT_UDP_PORT='AUTO',
-                 MODE='TCP',
-                 IDCODE=1,
-                 loop=None,
-                 executor=None,
-                 parser=None
-                 ):
+    def __init__(
+        self,
+        SERVER_IP='10.0.0.1',
+        SERVER_TCP_PORT=4712,
+        CLIENT_TCP_PORT='AUTO',
+        SERVER_UDP_PORT=4713,
+        CLIENT_UDP_PORT='AUTO',
+        MODE='TCP',
+        IDCODE=1,
+        loop: asyncio.AbstractEventLoop() = None,
+        executor: futures.Executor() = None,
+        parser: Parser() = None,
+        output_list=[]
+    ):
         self.IDCODE = IDCODE
         self.SERVER_IP = SERVER_IP
         self.SERVER_TCP_PORT = SERVER_TCP_PORT
@@ -82,137 +55,77 @@ class Client(object):
             self.parser = parser
         else:
             self.parser = Parser()
+        self.output_list = output_list
         if self.MODE == 'TCP':
             async def connect():
-                self.tsock = socket.socket(
-                    socket.AF_INET, socket.SOCK_STREAM)
-                self.tsock.setblocking(False)
-                self.server_address = (self.SERVER_IP, self.SERVER_TCP_PORT)
-                if self.CLIENT_TCP_PORT != 'AUTO':
-                    self.tsock.bind('', self.CLIENT_TCP_PORT)
-                try:
-                    await self.loop.sock_connect(
-                        self.tsock, self.server_address)
-                except Exception as e:
-                    print('Connection', str(self.server_address),
-                          'failed. Please check IP and PORT settings')
-                    print('Exit the program and try again.')
-                    print(e)
-                    raise
+                print('Connecting to:', self.SERVER_IP, '...')
+                await self.loop.create_connection(
+                    lambda: self._TCP(self),
+                    host=self.SERVER_IP, port=self.SERVER_TCP_PORT)
 
-            async def send_command(CMD):
-                await self.loop.sock_sendall(
-                    self.tsock, Command(self.IDCODE, CMD))
-
-            async def receive_data_message():
-                return await self.loop.sock_recv(self.tsock, 4096)
-            receive_conf = receive_data_message
-            # No different under TCP mode
-
-            async def close_connection():
-                self.tsock.close()
+            async def close():
+                self.cmd_transport.close()
         self.connect = connect
-        self.send_command = send_command
-        self.receive_conf = receive_conf
-        self.receive_data_message = receive_data_message
-        self.close_connection = close_connection
+        self.close = close
 
-    async def transmit_callback(self, target, *args):
+    async def send_cmd(self, CMD):
+        self.cmd_transport.write(Command(self.IDCODE, CMD))
+        print('Command \"' + CMD + '\" sent to', self.SERVER_IP)
+
+    async def run(self):
         await self.connect()
-        await self.send_command('off')
-        await self.send_command('cfg2')
-        raw_pkt = await self.receive_conf()
-        self.loop.run_in_executor(
-            self.executor, functools.partial(target, raw_pkt, *args))
-        await self.send_command('on')
-        print("Transmission ON. (Press 'Ctrl+C' to stop.)")
-        try:
-            while True:
-                raw_pkt = await self.receive_data_message()
-                self.loop.run_in_executor(
-                    self.executor, functools.partial(target, raw_pkt, *args))
-        except KeyboardInterrupt:
-            pass
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            print("\n")
-            print(e)
-            print("Last packet received:", raw_pkt)
-            await self.cleanup()
+        await self.send_cmd('off')
+        await self.send_cmd('cfg2')
+        await self.send_cmd('on')
 
-    async def _connection_test(self):
-        import sys
-        from datetime import datetime
-        from itertools import cycle
-        await self.connect()
-        print('Connected to', self.SERVER_IP)
-        try:
-            await self.send_command('off')
-            await self.send_command('cfg2')
-            try:
-                raw_pkt = await asyncio.wait_for(self.receive_conf(), 5)
-            except asyncio.TimeoutError:
-                print(
-                    'No response, Please check IDCODE setting.'
-                )
-                return
-            message = self.parser.parse_message(raw_pkt)
-            print(message.sync.frame_type.name,
-                  'received from', self.SERVER_IP)
-            await self.send_command('on')
-            print("Transmission ON. (Press 'Ctrl+C' to stop.)")
-            for char in cycle('|/-\\'):
-                raw_pkt = await self.receive_data_message()
-                message = self.parser.parse_message(raw_pkt)
-                time_tag = float(message.soc) + \
-                    float(message.fracsec.fraction_of_second)
-                time_tag = datetime.utcfromtimestamp(
-                    time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
-                freqlist = [str(
-                    self.parser.parse_message(raw_pkt)
-                    .data.pmu_data[i].freq) + 'Hz\t' for i in range(
-                    len(self.parser.parse_message(raw_pkt).data.pmu_data)
-                )]
-                status = char + time_tag + '\t' + ''.join(freqlist)
-                sys.stdout.write(status + "\r")
-                sys.stdout.flush()
-        except KeyboardInterrupt:
-            pass
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            print("\n")
-            print(e)
-            print("Last packet received:", raw_pkt)
-            await self.cleanup()
+    async def handle_message(self, data):
+        """
+        This function will only be called if self.client.output_list
+        is not None
+        when connected.
+        """
+        _arrtime = time.time()
+        #_msgs_future = self.loop.run_in_executor(
+        #    self.executor, functools.partial(self.parser.parse, data))
+        # await asyncio.sleep(0)
+        # msgs = await _msgs_future
+        msgs = self.parser.parse(data)
+        _parse_time = time.time() - _arrtime
+        for q in self.output_list:
+            for msg in msgs:
+                msg._arrtime = _arrtime
+                msg._parse_time = _parse_time
+                await q.put(msg)
 
-    async def cleanup(self):
-        print('\n')
-        await self.send_command('off')
-        print('Transmission OFF.')
-        await self.close_connection()
-        print('Connection to', self.SERVER_IP, 'closed.')
+    async def clean_up(self):
+        await self.send_cmd('off')
+        await self.close()
+
+    class _TCP(asyncio.Protocol):
+        def __init__(self, client):
+            self.client = client
+            self.transport = None
+
+        def connection_made(self, transport):
+            self.transport = transport
+            self.client.cmd_transport = self.transport
+            print('Connected to:', self.transport.get_extra_info('peername'))
+            if not self.client.output_list:
+                print('No output_list defined. Received data will be dropped.')
+
+        def data_received(self, data):
+            asyncio.ensure_future(self.client.handle_message(data))
+
+        def connection_lost(self, exc):
+            print('Connection ', self.transport.get_extra_info(
+                'peername'), 'closed.')
 
     def connection_test(self):
         try:
-            task = self.loop.create_task(self._connection_test())
+            task = self.loop.create_task(self.run())
             self.loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
             self.loop.call_soon_threadsafe(task.cancel)
-            self.loop.run_until_complete(self.cleanup())
-
-    def run(self, target, *args):
-        if not callable(target):
-            raise TypeError("target must be a callable, "
-                            "not {!r}".format(type(target)))
-        try:
-            task = self.loop.create_task(self.transmit_callback(target, *args))
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.loop.call_soon_threadsafe(task.cancel)
-            self.loop.run_until_complete(self.cleanup())
+            self.loop.run_until_complete(self.clean_up())

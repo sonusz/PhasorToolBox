@@ -27,6 +27,7 @@ class Common(KaitaiStruct):
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
+        self._mini_cfgs = _mini_cfgs
         try:
             self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
         except:
@@ -53,10 +54,12 @@ class Common(KaitaiStruct):
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Header(io)
         elif _on == 'configuration_frame_2':
+            self._mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
         elif _on == 'configuration_frame_3':
+            self._mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg3(io)
@@ -131,6 +134,14 @@ class Common(KaitaiStruct):
                 self._m_fraction_of_second = self.raw_fraction_of_second / self._time_base
 
             return self._m_fraction_of_second if hasattr(self, '_m_fraction_of_second') else None
+
+    @property
+    def time(self):
+        if hasattr(self, '_m_time'):
+            return self._m_time if hasattr(self, '_m_time') else None
+
+        self._m_time = self.soc + self.fracsec.fraction_of_second
+        return self._m_time if hasattr(self, '_m_time') else None
 
     @property
     def chk_body(self):

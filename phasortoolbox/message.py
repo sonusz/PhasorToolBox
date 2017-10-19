@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
+"""
+This module serialize the message srtucture and returns a raw synchrophasor
+message in bytes.
+"""
 
 import time
 import binascii
 
 
 class Message(bytes):
-    """This object returns a synchrophasor message in bytes.
+    """This is the base Message class.
     It would be easier to use classes that inherited from this class,
     such as command(), data(), cfg2()
 
@@ -31,17 +35,32 @@ class Message(bytes):
     """
 
     def __new__(
-            self, SYNC=b'\xaa\x01', IDCODE=1,
-            TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
-            TIME_BASE=16777215, DATA=b''):
+        self,
+        SYNC=b'\xaa\x01',
+        IDCODE=1,
+        TQ_FLAGS='0000',
+        MSG_TQ='1111',
+        TIME_BASE=16777215,
+        DATA=b'',
+        TIME: time.time()
+    ):
         FRAMESIZE = (len(DATA) + 16).to_bytes(2, 'big')
-        if TIME == 'NOW':
-            TIME = time.time()
-        SOC_FRACSEC = b''.join((
-            int(TIME).to_bytes(4, 'big'), int(TQ_FLAGS + MSG_TQ, 2).to_bytes(
-                1, 'big'), int(TIME % 1 * TIME_BASE).to_bytes(3, 'big')))
-        raw_data = b''.join((SYNC, FRAMESIZE,
-                             IDCODE.to_bytes(2, 'big'), SOC_FRACSEC, DATA))
+
+        SOC_FRACSEC = b''.join(
+            (
+                int(TIME).to_bytes(4, 'big'),
+                int(TQ_FLAGS + MSG_TQ, 2).to_bytes(1, 'big'),
+                int(TIME % 1 * TIME_BASE).to_bytes(3, 'big')
+            )
+        )
+        raw_data = b''.join(
+            (
+                SYNC,
+                FRAMESIZE,
+                IDCODE.to_bytes(2, 'big'),
+                SOC_FRACSEC, DATA
+            )
+        )
         raw_data += binascii.crc_hqx(raw_data, -1).to_bytes(2, 'big')
         return super(Message, self).__new__(self, raw_data)
 
@@ -95,15 +114,29 @@ class Command(Message):
         'ext': 8
     }
 
-    def __new__(self, IDCODE=1, CMD='off',
-                TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
-                TIME_BASE=16777215,
-                USER_DEF='0000', EXT=b''
-                ):
+    def __new__(
+        self,
+        IDCODE=1, CMD='off',
+        TQ_FLAGS='0000',
+        MSG_TQ='1111',
+        TIME_BASE=16777215,
+        USER_DEF='0000',
+        EXT=b''
+    ):
+        TIME = time.time()
         return super(Command, self).__new__(
-            self, SYNC=b'\xaaA', IDCODE=IDCODE,
-            TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,
+            self,
+            SYNC=b'\xaaA',
+            IDCODE=IDCODE,
+            TIME=TIME,
+            TQ_FLAGS=TQ_FLAGS,
+            MSG_TQ=MSG_TQ,
             TIME_BASE=16777215,
-            DATA=b''.join((int('0000' + USER_DEF, 2).to_bytes(1, 'big'),
-                           self.CommandCode[CMD].to_bytes(1, 'big'), EXT))
+            DATA=b''.join(
+                (
+                    int('0000' + USER_DEF, 2).to_bytes(1, 'big'),
+                    self.CommandCode[CMD].to_bytes(1, 'big'),
+                    EXT
+                )
+            )
         )
