@@ -1,24 +1,29 @@
 # PhasorToolBox
 
-The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
+The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing. This is a Python 3 package.
+
 ## Performance:
+
 The average times take to parse a single packet with the parser module is around 0.85 ms on a 2012 mac laptop.
 According to [IEEE C37.118.2-2011 Standard], the typical range of delay caused by PDC processing & alignment is 2 ms to 2+ s.
 The methods provided by the client module are coroutines. That makes it possible to connects to hundreds of PMUs/PDCs at the same time with minimal overhead.
 
+
 #### To install and test the performance of the package on your device:
+
 ```bash
-#!/usr/bin/env bash
-python setup.py install
-python parse_stream.py stream.bin
+git clone https://github.com/sonusz/PhasorToolBox.git
+cd PhasorToolBox/
+python3 setup.py install
+python3 parse_stream.py stream.bin
 ```
 ## Examples:
+
 #### Connection Tester:
+
 This example uses 10.0.0.1 and port 4712 as an example.
 ```python
->>> import asyncio
 >>> from phasortoolbox import Client
->>> loop = asyncio.get_event_loop()
 >>> remote_pmu = Client(SERVER_IP='10.0.0.1',
 ....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP', loop=loop)
 >>> remote_pmu.connection_test()
@@ -109,6 +114,7 @@ The binary parser is created with the help of using [Kaitai Struct].
 ##### phasortoolbox.Client.receive_data_message():
 ##### phasortoolbox.Client.close_connection():
 ##### phasortoolbox.Client.cleanup():
+
 
 
 

@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 
-import logging
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import Common
+
 
 class MiniCfgs(object):
     def __init__(self):
         self.mini_cfg = {}
-    def add_cfg(self, cfg_pkt):
-        _mini_cfg = MiniCfg(cfg_pkt)
-        self.mini_cfg[_mini_cfg._cfg_pkt.idcode] = _mini_cfg
-        logging.info(_mini_cfg._type, 'updated for data stream ID:', _mini_cfg._cfg_pkt.idcode)
-    def __len__(self):
-        return len(self.mini_cfg)
+
+    def add_cfg(self, _cfg_pkt_idcode, _cfg_pkt_data):
+        self.mini_cfg[_cfg_pkt_idcode] = MiniCfg(_cfg_pkt_data)
 
 
 class MiniCfg(object):
-    def __init__(self, cfg_pkt):
-        io = KaitaiStream(BytesIO(cfg_pkt))
-        self._cfg_pkt = Common(io)
-        self._type = self._cfg_pkt.sync.frame_type.name
-        self._cfg = self._cfg_pkt.data
+    def __init__(self, _cfg_pkt_data):
+        #io = KaitaiStream(BytesIO(cfg_pkt))
+        #self._cfg_pkt = Common(io)
+        #self._type = self._cfg_pkt.sync.frame_type.name
+        #self._cfg = self._cfg_pkt.data
+        self._cfg = _cfg_pkt_data
         self.num_pmu = self._cfg.num_pmu
         self.time_base = self.TimeBase(self._cfg.time_base)
         self.station = [None] * (self.num_pmu)
@@ -68,7 +66,7 @@ class MiniCfg(object):
             def __init__(self, _anunit):
                 self._anunit = _anunit
                 x = self._anunit.raw_conversion_factor
-                self.conversion_factor = x if x <=  8388607 else x - 16777215
+                self.conversion_factor = x if x <= 8388607 else x - 16777215
 
         class Digunit(object):
             def __init__(self, _digunit):

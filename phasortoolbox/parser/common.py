@@ -27,6 +27,7 @@ class Common(KaitaiStruct):
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
+        self._mini_cfgs = _mini_cfgs
         try:
             self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
         except:
@@ -35,46 +36,46 @@ class Common(KaitaiStruct):
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
                                           self._mini_cfg.time_base.time_base if self._mini_cfg else None)
         _on = self.sync.frame_type.name
-        if _on == 'data_frame':
+        if _on == 'data':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             if self._mini_cfg:
                 io = KaitaiStream(BytesIO(self._raw_data))
                 self.data = Data(io, _mini_cfg = self._mini_cfg)
             else:
                 self.data = self._raw_data
-            #self.data = self._io.read_bytes((self.framesize - 16))#
-            #self.data = Data(self._io, _mini_cfg = self._mini_cfg)
-        elif _on == 'command_frame':
+        elif _on == 'cfg2':
+            self._raw_data = self._io.read_bytes((self.framesize - 16))
+            io = KaitaiStream(BytesIO(self._raw_data))
+            self.data = Cfg2(io)
+            self._mini_cfgs.add_cfg(self.idcode, self.data)
+        elif _on == 'cmd':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Command(io)
-        elif _on == 'header_frame':
-            self._raw_data = self._io.read_bytes((self.framesize - 16))
-            io = KaitaiStream(BytesIO(self._raw_data))
-            self.data = Header(io)
-        elif _on == 'configuration_frame_2':
-            self._raw_data = self._io.read_bytes((self.framesize - 16))
-            io = KaitaiStream(BytesIO(self._raw_data))
-            self.data = Cfg2(io)
-        elif _on == 'configuration_frame_3':
+        elif _on == 'cfg3':
+            self._mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg3(io)
-        elif _on == 'configuration_frame_1':
+        elif _on == 'cfg1':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
+        elif _on == 'header':
+            self._raw_data = self._io.read_bytes((self.framesize - 16))
+            io = KaitaiStream(BytesIO(self._raw_data))
+            self.data = Header(io)
         self.chk = self._io.read_u2be()
 
     class SyncWord(KaitaiStruct):
 
         class FrameTypeEnum(Enum):
-            data_frame = 0
-            header_frame = 1
-            configuration_frame_1 = 2
-            configuration_frame_2 = 3
-            command_frame = 4
-            configuration_frame_3 = 5
+            data = 0
+            header = 1
+            cfg1 = 2
+            cfg2 = 3
+            cmd = 4
+            cfg3 = 5
 
         class VersionNumberEnum(Enum):
             c_37_118_2005 = 1
@@ -131,6 +132,14 @@ class Common(KaitaiStruct):
                 self._m_fraction_of_second = self.raw_fraction_of_second / self._time_base
 
             return self._m_fraction_of_second if hasattr(self, '_m_fraction_of_second') else None
+
+    @property
+    def time(self):
+        if hasattr(self, '_m_time'):
+            return self._m_time if hasattr(self, '_m_time') else None
+
+        self._m_time = self.soc + self.fracsec.fraction_of_second
+        return self._m_time if hasattr(self, '_m_time') else None
 
     @property
     def chk_body(self):
