@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-requirements = ['kaitaistruct']
+requirements = ['kaitaistruct','uvloop']
 
 setup(name='phasortoolbox',
       version='0.1',
