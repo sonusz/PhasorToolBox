@@ -2,29 +2,32 @@
 import time
 import asyncio
 from concurrent import futures
-#import functools
 from phasortoolbox.message import Command
-from phasortoolbox import Parser
+from phasortoolbox import Parser, PDC, DevicesControl
 import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-"""A synchrphaor protocol connection clinet.
-
-Connects to any devices that follow IEEE Std C37.118.2-2011, send
-commands, and receiving data.
-According to IEEE Std C37.118.2-2011 'The device providing data is the
-server and the device receiving data is the client.'
-
-Examples:
-
-    # To quickly test a remote host:
-    loop = asyncio.get_event_loop()
-    remote_pmu = Client(SERVER_IP='10.0.0.1',
-              SERVER_TCP_PORT=4712, IDCODE=1, loop=loop)
-    remote_pmu.connection_test()
-"""
 
 
 class Client(object):
+    """A synchrphaor protocol connection clinet.
+
+    Connects to any devices that follow IEEE Std C37.118.2-2011, send
+    commands, and receiving data.
+    According to IEEE Std C37.118.2-2011 'The device providing data is the
+    server and the device receiving data is the client.'
+
+    Examples:
+
+        # To quickly test a remote host:
+        my_pmu = Client(SERVER_IP='10.0.0.1',
+                  SERVER_TCP_PORT=4712, IDCODE=1)
+        my_pmu.connection_test()
+
+    For most of the times, there is no need to directly access any methods in
+    this module after initiate. Use the phasortoolbox.DevicesControl() to
+    control this device instead.
+    """
+
     def __init__(
         self,
         SERVER_IP='10.0.0.1',
@@ -37,7 +40,6 @@ class Client(object):
         loop: asyncio.AbstractEventLoop() = None,
         executor: futures.Executor() = None,
         parser: Parser() = None,
-        output_list=[]
     ):
         self.IDCODE = IDCODE
         self.SERVER_IP = SERVER_IP
@@ -55,7 +57,7 @@ class Client(object):
             self.parser = parser
         else:
             self.parser = Parser()
-        self.output_list = output_list
+        self._output_list = []
         if self.MODE == 'TCP':
             async def connect():
                 print('Connecting to:', self.SERVER_IP, '...')
@@ -82,24 +84,19 @@ class Client(object):
 
     async def handle_message(self, data):
         """
-        This function will only be called if self.client.output_list
+        This function will only be called if self.client._output_list
         is not None
         when connected.
         """
         _arrtime = time.time()
-        #_msgs_future = self.loop.run_in_executor(
-        #    self.executor, functools.partial(self.parser.parse, data))
-        # await asyncio.sleep(0)
-        # msgs = await _msgs_future
         msgs = self.parser.parse(data)
         _parse_time = time.time() - _arrtime
         for msg in msgs:
             msg._arrtime = _arrtime
             msg._parse_time = _parse_time
-        for q in self.output_list:
+        for q in self._output_list:
             for msg in msgs:
-                await q.put(msg)
-#        [await q.put(msg) for msg in msgs for q in self.output_list]
+                await q._input_queue.put(msg)
 
     async def clean_up(self):
         await self.send_cmd('off')
@@ -114,8 +111,8 @@ class Client(object):
             self.transport = transport
             self.client.cmd_transport = self.transport
             print('Connected to:', self.transport.get_extra_info('peername'))
-            if not self.client.output_list:
-                print('No output_list defined. Received data will be dropped.')
+            if not self.client._output_list:
+                print('No output defined. Received data will be dropped.')
 
         def data_received(self, data):
             asyncio.ensure_future(self.client.handle_message(data))
@@ -125,11 +122,8 @@ class Client(object):
                 'peername'), 'closed.')
 
     def connection_test(self):
-        try:
-            task = self.loop.create_task(self.run())
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.loop.call_soon_threadsafe(task.cancel)
-            self.loop.run_until_complete(self.clean_up())
+        _my_pdc = PDC()
+        _my_devices = DevicesControl()
+        _my_devices.connection_list = [[[self], [_my_pdc]]]
+        _my_devices.device_list = [self, _my_pdc]
+        _my_devices.run()
