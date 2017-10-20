@@ -13,8 +13,8 @@ class PDC(object):
 
     def __init__(
         self,
-        WAIT_TIME=0.3,
-        BUF_SIZE=1,
+        WAIT_TIME=0.1,
+        BUF_SIZE=2,
         FILTER={'data'},
         loop: asyncio.AbstractEventLoop() = None,
         executor: futures.Executor() = None,
@@ -59,7 +59,7 @@ class PDC(object):
                 continue
             elif not self._buf[time_tag]['sent'] and \
                 (
-                len(self._buf[time_tag]) == len(self._input_list)
+                len(self._buf[time_tag]) - 2 == len(self._input_list)
                 or
                 time.time() - self._buf[time_tag]['_arrtime'] >= self.WAIT_TIME
             ):
@@ -85,7 +85,6 @@ class PDC(object):
             for time_tag in _del_list:
                 del self._buf[time_tag]
                 self._buf_index.remove(time_tag)
-            print(time.time() - _temp_send_list[0])
             # self.loop.run_in_executor(
             #    self.executor, self.callback, buffer_msgs)
             self.callback(buffer_msgs)
