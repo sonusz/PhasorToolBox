@@ -52,9 +52,7 @@ class DevicesControl(object):
 
     def connect(self):
         for connection in self.connection_list:
-            print(connection)
             for source in connection[0]:
-                print(source)
                 for destination in connection[1]:
                     source._output_list.append(destination)
                     destination._input_list.append(source)
@@ -79,4 +77,4 @@ class DevicesControl(object):
             for i, device in enumerate(self.device_list):
                 self.loop.call_soon_threadsafe(tasks[i].cancel)
                 self.loop.run_until_complete(device.clean_up())
-            self.disconnect()
+        self.disconnect()

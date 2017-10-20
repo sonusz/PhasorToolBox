@@ -19,11 +19,14 @@ class PDC(object):
         loop: asyncio.AbstractEventLoop() = None,
         executor: futures.Executor() = None,
         parser: Parser() = None,
-        step_time=0.01
+        step_time=0.01,
+        callback=None
     ):
         self.WAIT_TIME = WAIT_TIME
         self.FILTER = FILTER
-        self._step_time = step_time
+        self.BUF_SIZE = BUF_SIZE
+        self.callback = callback
+        self.step_time = step_time
         self._input_list = []
         self._input_queue = asyncio.Queue()
         if loop:
@@ -32,10 +35,13 @@ class PDC(object):
             self.loop = asyncio.get_event_loop()
         self.executor = executor
 
-    def _check_buf(self):
+    async def _check_buf(self):
         """Check which data can be send
-
-        All data are kept in an dictionary. A valid record also contains the earlest arrive time and a flag indicated if the record has been sent previously. The newest record returned to callback must be a new record that has never been sent before. Thus, the loop check all data from the newest arrived data
+        All data are kept in an dictionary. A valid record also contains the
+        earlest arrive time and a flag indicated if the record has been sent
+        previously. The newest record returned to callback must be a new
+        record that has never been sent before. Thus, the loop check all data
+        from the newest arrived data.
         """
         _temp_send_list = []
         for time_tag in reversed(self._buf_index):
@@ -47,7 +53,7 @@ class PDC(object):
                 # Continue to add if the first one that has never been sent
                 # is found. Keep add until send buffer is full
                 _temp_send_list.append(time_tag)
-                if len(_temp_send_list) >= BUF_SIZE:
+                if len(_temp_send_list) >= self.BUF_SIZE:
                     # Break if list full
                     break
                 continue
@@ -59,15 +65,14 @@ class PDC(object):
             ):
                 # Find the first one that can be send and never sent before
                 _temp_send_list.append(time_tag)  # Add to prepare to send list
-                if len(_temp_send_list) >= BUF_SIZE:
+                if len(_temp_send_list) >= self.BUF_SIZE:
                     # Break if list full
                     break
                 continue
-
-        if len(_temp_send_list) >= BUF_SIZE:
+        if len(_temp_send_list) >= self.BUF_SIZE:
             buffer_msgs = [
                 [
-                    _buf[time_tag][idcode] for idcode in
+                    self._buf[time_tag][idcode] for idcode in
                     self._ordered_idcode_list
                 ]
                 for time_tag in reversed(_temp_send_list)]
@@ -80,10 +85,13 @@ class PDC(object):
             for time_tag in _del_list:
                 del self._buf[time_tag]
                 self._buf_index.remove(time_tag)
-            self.loop.run_in_executor(
-                self.executor, target, buffer_msgs)
+            try:
+                self.loop.run_in_executor(
+                    self.executor, self.callback, buffer_msgs)
+            except:
+                pass
 
-    async def run(self, target=None):
+    async def run(self):
         if not self._input_list:
             print('No input defined.')
             return
@@ -91,16 +99,18 @@ class PDC(object):
         for _input in self._input_list:
             self._ordered_idcode_list.append(_input.IDCODE)
         self._ordered_idcode_list.sort()
-        if not target or (target and not callable(target)):
+        if not self.callback or \
+                (self.callback and not callable(self.callback)):
             raise TypeError("Input must be a function, "
-                            "not {!r}".format(type(target)))
+                            "not {!r}".format(type(self.callback)))
         self._buf = {}
         self._buf_index = []
         while True:
-            self._check_buf()   # check if buf is ready for sent
             try:
+                _task_check_buf = asyncio.ensure_future(self._check_buf())
+                # check if buf is ready for sent
                 msg = await asyncio.wait_for(
-                    self._input_queue.get(), self._step_time)
+                    self._input_queue.get(), self.step_time)
                 if msg.sync.frame_type.name not in self.FILTER:
                     continue
                 try:
@@ -114,11 +124,10 @@ class PDC(object):
                 # print(self._input_queue.qsize(), msg.idcode, msg._arrtime,
                 #      time.time() - msg._arrtime, msg._parse_time)
             except asyncio.TimeoutError:
-                if time.time() - _wait_timer >= self.WAIT_TIME:
-                    _wait_timer = time.time()
-                    continue
-
+                continue
             except asyncio.CancelledError:
+                if not _task_check_buf.cancelled():
+                    _task_check_buf.cancel()
                 break
 
     async def clean_up(self):
