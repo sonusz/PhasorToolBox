@@ -9,18 +9,20 @@ The methods provided by the client module are coroutines. That makes it possible
 
 
 #### To install and test the performance of the package on your device:
+
+
 ```bash
 #!/usr/bin/env bash
-python setup.py install
-python parse_stream.py stream.bin
+git clone https://github.com/sonusz/PhasorToolBox.git
+cd PhasorToolBox/
+python3 setup.py install
+python3 parse_stream.py stream.bin
 ```
 ## Examples:
 #### Connection Tester:
 This example uses 10.0.0.1 and port 4712 as an example.
 ```python
->>> import asyncio
 >>> from phasortoolbox import Client
->>> loop = asyncio.get_event_loop()
 >>> remote_pmu = Client(SERVER_IP='10.0.0.1',
 ....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP', loop=loop)
 >>> remote_pmu.connection_test()
