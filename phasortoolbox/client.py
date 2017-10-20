@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import sys
+from datetime import datetime
 import time
 import asyncio
 from concurrent import futures
@@ -122,8 +124,6 @@ class Client(object):
                 'peername'), 'closed.')
 
     def connection_test(self):
-        import sys
-        from datetime import datetime
         _my_pdc = PDC()
         _my_pdc.callback = self._in_line_print
         _my_devices = DevicesControl()
