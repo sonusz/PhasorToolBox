@@ -35,7 +35,7 @@ class PDC(object):
             self.loop = asyncio.get_event_loop()
         self.executor = executor
 
-    async def _check_buf(self):
+    def _check_buf(self):
         """Check which data can be send
         All data are kept in an dictionary. A valid record also contains the
         earlest arrive time and a flag indicated if the record has been sent
@@ -85,11 +85,10 @@ class PDC(object):
             for time_tag in _del_list:
                 del self._buf[time_tag]
                 self._buf_index.remove(time_tag)
-            try:
-                self.loop.run_in_executor(
-                    self.executor, self.callback, buffer_msgs)
-            except:
-                pass
+            print(time.time() - _temp_send_list[0])
+            # self.loop.run_in_executor(
+            #    self.executor, self.callback, buffer_msgs)
+            self.callback(buffer_msgs)
 
     async def run(self):
         if not self._input_list:
@@ -107,7 +106,7 @@ class PDC(object):
         self._buf_index = []
         while True:
             try:
-                _task_check_buf = asyncio.ensure_future(self._check_buf())
+                self._check_buf()
                 # check if buf is ready for sent
                 msg = await asyncio.wait_for(
                     self._input_queue.get(), self.step_time)
@@ -126,8 +125,6 @@ class PDC(object):
             except asyncio.TimeoutError:
                 continue
             except asyncio.CancelledError:
-                if not _task_check_buf.cancelled():
-                    _task_check_buf.cancel()
                 break
 
     async def clean_up(self):
