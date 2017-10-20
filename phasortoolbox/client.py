@@ -137,10 +137,9 @@ class Client(object):
         time_tag = datetime.utcfromtimestamp(
             time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
         freqlist = [str(
-            self.parser.parse_message(raw_pkt)
-            .data.pmu_data[i].freq) + 'Hz\t' for i in range(
-            len(self.parser.parse_message(raw_pkt).data.pmu_data)
-        )]
+            msg.data.pmu_data[i].freq) + 'Hz\t' for i in range(
+            len(msg.data.pmu_data)
+        ) for msg in buffer_msgs[0]]
         status = char + time_tag + '\t' + ''.join(freqlist)
         sys.stdout.write(status + "\r")
         sys.stdout.flush()
