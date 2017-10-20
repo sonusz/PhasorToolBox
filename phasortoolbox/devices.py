@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 from concurrent import futures
-from phasortoolbox import Client, PDC
 import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
