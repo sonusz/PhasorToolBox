@@ -125,6 +125,7 @@ class Client(object):
         import sys
         from datetime import datetime
         _my_pdc = PDC()
+        _my_pdc.callback = self._in_line_print
         _my_devices = DevicesControl()
         _my_devices.connection_list = [[[self], [_my_pdc]]]
         _my_devices.device_list = [self, _my_pdc]
