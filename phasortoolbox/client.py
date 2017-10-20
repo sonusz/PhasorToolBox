@@ -131,15 +131,14 @@ class Client(object):
         _my_devices.device_list = [self, _my_pdc]
         _my_devices.run()
 
+
     def _in_line_print(self, buffer_msgs):
         message = buffer_msgs[0][0]
         time_tag = message.time
         time_tag = datetime.utcfromtimestamp(
             time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
-        freqlist = [str(
-            msg.data.pmu_data[i].freq) + 'Hz\t' for i in range(
-            len(msg.data.pmu_data)
-        ) for msg in buffer_msgs[0]]
-        status = char + time_tag + '\t' + ''.join(freqlist)
+        freqlist = [str(my_msg.data.pmu_data[0].freq) + 'Hz\t' for my_msg in buffer_msgs[0]]
+        status = time_tag + '\t' + ''.join(freqlist)
         sys.stdout.write(status + "\r")
         sys.stdout.flush()
+
