@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 import bisect
-from collections import deque defaultdict
+from collections import deque, defaultdict
 import asyncio
 from concurrent import futures
 from phasortoolbox import Parser
