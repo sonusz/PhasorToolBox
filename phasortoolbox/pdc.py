@@ -72,46 +72,49 @@ class PDC(object):
                 for time_tag in reversed(self._buf_index):
                     if len(_temp_send_list) == self.BUF_SIZE:
                         break
-                    if (len(_temp_send_list) > 0) and
-                    (
-                        self._buf[time_tag]['sent'] or
+                    if (
+                        (len(_temp_send_list) > 0) and
                         (
+                            self._buf[time_tag]['sent'] or
                             (
-                                len(self._buf[time_tag]) - 2 ==
-                                len(self._input_list)
-                            ) or
-                            (
-                                time.time() -
-                                self._buf[time_tag]['_arrtime'] >=
-                                self.WAIT_TIME
+                                (
+                                    len(self._buf[time_tag]) - 2 ==
+                                    len(self._input_list)
+                                ) or
+                                (
+                                    time.time() -
+                                    self._buf[time_tag]['_arrtime'] >=
+                                    self.WAIT_TIME
+                                )
                             )
                         )
                     ):
                         _temp_send_list.append(time_tag)
                         # Valid to send, also the first one already found.
                         continue
-
-                    elif (len(_temp_send_list) == 0) and
-                    (
-                        not self._buf[time_tag]['sent']
-                    ) and
-                    (
-                        ((len(self._buf[time_tag]) - 2) ==
-                            len(self._input_list)) or
-                        ((time.time() - self._buf[time_tag]
-                          ['_arrtime']) >= self.WAIT_TIME)
+                    elif (
+                        (len(_temp_send_list) == 0) and
+                        (
+                            not self._buf[time_tag]['sent']
+                        ) and
+                        (
+                            ((len(self._buf[time_tag]) - 2) ==
+                                len(self._input_list)) or
+                            ((time.time() - self._buf[time_tag]
+                              ['_arrtime']) >= self.WAIT_TIME)
+                        )
                     ):
                         # The fist item in the list must be the newest recored
                         # valid to send and has never been sent before.
                         _temp_send_list.append(time_tag)
                         continue
-
-                    elif (len(_temp_send_list) == 0) and
-                    (self._buf[time_tag]['sent']):
+                    elif (
+                        (len(_temp_send_list) == 0) and
+                        (self._buf[time_tag]['sent'])
+                    ):
                         # The newest recored valid to send has been sent
                         # before, no need to do anything.
                         break
-
                 if len(_temp_send_list) == self.BUF_SIZE:
                     # Will not do anything if not engough data to send
                     # Prepare send msgs and remove old data.
@@ -134,7 +137,6 @@ class PDC(object):
                     # self.loop.run_in_executor(
                     #    self.executor, self.callback, buffer_msgs)
                     self.callback(buffer_msgs)
-
                 ###############################################################
                 """Get all data from queue
                 If user's callback function is too slow, queue size will keep
@@ -150,7 +152,6 @@ class PDC(object):
                     msgs = [None]
                     msgs[0] = await asyncio.wait_for(
                         self._input_queue.get(), self.step_time)
-
                 for msg in msgs:
                     if msg.sync.frame_type.name not in self.FILTER:
                         continue
