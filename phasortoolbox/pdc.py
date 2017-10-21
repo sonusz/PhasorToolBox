@@ -144,9 +144,9 @@ class PDC(object):
                 data. If user's callback function is fast enough, then wait
                 until item available in queue.
                 """
-                if self._input_queue.qsize >= 1:
+                if self._input_queue.qsize() >= 1:
                     msgs = []
-                    for i in range(self._input_queue.qsize):
+                    for i in range(self._input_queue.qsize()):
                         msgs.append(self._input_queue.get_nowait())
                 else:
                     msgs = [None]
