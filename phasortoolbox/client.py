@@ -23,7 +23,7 @@ class Client(object):
         # To quickly test a remote host:
         my_pmu = Client(SERVER_IP='10.0.0.1',
                   SERVER_TCP_PORT=4712, IDCODE=1)
-        my_pmu.connection_test()
+        my_pmu.test()
 
     For most of the times, there is no need to directly access any methods in
     this module after initiate. Use the phasortoolbox.DevicesControl() to

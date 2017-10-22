@@ -77,15 +77,11 @@ Then, you can check the received messages:
 from phasortoolbox import PDC, Client, DevicesControl
 
 def my_print1(buffer_msgs):
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f ")
-    freqlist = '\t'.join("%.4f" % (
-        pmu_d.freq) + 'Hz\t' if my_msg is not None else
-        'No Data' for
+    freqlist = ' '.join("%.4f" % (
+        pmu_d.freq) + 'Hz' for
         my_msg in buffer_msgs[-1] for
         pmu_d in my_msg.data.pmu_data)
-    print('fun1 '+time_tag+freqlist)
+    print('fun1 '+freqlist)
 
 def main():
     my_devices = DevicesControl()
@@ -114,121 +110,38 @@ if __name__ == '__main__':
 
 
 #### Get aligned messages and integrate with multipe applications:
+Just creat another pdc and function. 
 ```python
-from phasortoolbox import PDC, Client, DevicesControl
-
-def my_print1(buffer_msgs):
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f ")
-    freqlist = '\t'.join("%.4f" % (
-        pmu_d.freq) + 'Hz\t' if my_msg is not None else
-        'No Data' for
-        my_msg in buffer_msgs[-1] for
-        pmu_d in my_msg.data.pmu_data)
-    print(time_tag+freqlist)
-
-
 def my_print2(buffer_msgs):
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f ")
-    freqlist = '\t'.join("%.4f" % (
-        pmu_d.freq) + 'Hz\t' if my_msg is not None else
-        'No Data' for
+    freqlist = ' '.join("%.4f" % (
+        pmu_d.freq) + 'Hz' for
         my_msg in buffer_msgs[-1] for
         pmu_d in my_msg.data.pmu_data)
-    print('fun2 '+time_tag+freqlist)
+    print('fun2 '+freqlist)
 
+my_pdc2 = PDC()
+my_pdc2.CALLBACK = my_print2
+```
 
-def main():
-    my_devices = DevicesControl()
-
-    my_pdc1 = PDC()
-    my_pdc1.CALLBACK = my_print1
-
-    my_pdc2 = PDC()
-    my_pdc2.CALLBACK = my_print2
-
-
-    my_pmu1 = Client(SERVER_IP='10.0.0.1',
-              SERVER_TCP_PORT=4712, IDCODE=1)
-    my_pmu2 = Client(SERVER_IP='10.0.0.2',
-              SERVER_TCP_PORT=4712, IDCODE=2)
-    my_pmu3 = Client(SERVER_IP='10.0.0.3',
-              SERVER_TCP_PORT=4712, IDCODE=3)
-
-    my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
-
-    my_devices.connection_list = [
+Then change above connection_list to:
+```python
+my_devices.connection_list = [
     [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1,my_pdc2]]
     ]
+my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
+my_devices.run()
 
-    my_devices.run()
-
-if __name__ == '__main__':
-    main()
 ```
 
 
 #### Multipe applications from different set of sources:
 ```python
-from phasortoolbox import PDC, Client, DevicesControl
-
-def my_print1(buffer_msgs):
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f ")
-    freqlist = '\t'.join("%.4f" % (
-        pmu_d.freq) + 'Hz\t' if my_msg is not None else
-        'No Data' for
-        my_msg in buffer_msgs[-1] for
-        pmu_d in my_msg.data.pmu_data)
-    print(time_tag+freqlist)
-
-
-def my_print2(buffer_msgs):
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f ")
-    freqlist = '\t'.join("%.4f" % (
-        pmu_d.freq) + 'Hz\t' if my_msg is not None else
-        'No Data' for
-        my_msg in buffer_msgs[-1] for
-        pmu_d in my_msg.data.pmu_data)
-    print('fun2 '+time_tag+freqlist)
-
-
-def main():
-    my_devices = DevicesControl()
-
-    my_pdc1 = PDC()
-    my_pdc1.CALLBACK = my_print1
-
-    my_pdc2 = PDC()
-    my_pdc2.CALLBACK = my_print2
-
-
-    my_pmu1 = Client(SERVER_IP='10.0.0.1',
-              SERVER_TCP_PORT=4712, IDCODE=1)
-    my_pmu2 = Client(SERVER_IP='10.0.0.2',
-              SERVER_TCP_PORT=4712, IDCODE=2)
-    my_pmu3 = Client(SERVER_IP='10.0.0.3',
-              SERVER_TCP_PORT=4712, IDCODE=3)
-    my_pmu4 = Client(SERVER_IP='10.0.0.4',
-              SERVER_TCP_PORT=4712, IDCODE=4)
-
-    my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
-
-    my_devices.connection_list = [
-    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1]],
-    [[my_pmu2,my_pmu3,my_pmu4], [my_pdc2]]
+my_devices.connection_list = [
+    [[my_pmu1,my_pmu2], [my_pdc1]],
+    [[my_pmu2,my_pmu3], [my_pdc2]]
     ]
-
-    my_devices.run()
-
-if __name__ == '__main__':
-    main()
+my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
+my_devices.run()
 ```
 
 
