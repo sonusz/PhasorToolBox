@@ -12,7 +12,7 @@ class Parser(object):
     Note:
         When parsing a stream, the parser automatically detects and stores
         configuration messages and use the most recent received configuration
-        message to parse the following data messages. Multiple synchrophasor
+        message to parse the subsequent data messages. Multiple synchrophasor
         message streams can be parsed using one parser instance. The parser
         identifies each synchrophasor message stream by using its IDCODE and
         then apply the corresponded configuration message to parse the data
@@ -34,13 +34,13 @@ class Parser(object):
         if raw_cfg_pkt:
             self.parse(raw_cfg_pkt)
 
-    def parse(self, raw_byte: bytes):
+    def parse(self, raw_bytes: bytes):
         """Parse synchrphasor message stream
 
 
         """
         stream = []
-        self._raw_data = raw_byte
+        self._raw_data = raw_bytes
         _io = KaitaiStream(BytesIO(self._raw_data))
         while not _io.is_eof():
             message = Common(_io, _mini_cfgs=self._mini_cfgs)

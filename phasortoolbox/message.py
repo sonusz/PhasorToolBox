@@ -55,10 +55,10 @@ class Command(Message):
         synchrophasor message.
 
     Example:
-        my_msg = command(1,'on') # Data stream 1 turn on transmission.
-        my_msg = command(IDCODE=2, CMD='off') # Data stream 2 turn off
+        my_msg = Command(1,'on') # Data stream 1 turn on transmission.
+        my_msg = Command(IDCODE=2, CMD='off') # Data stream 2 turn off
         transmission.
-        my_msg = command(IDCODE=3, CMD='ext', EXT = b'User defined message')
+        my_msg = Command(IDCODE=3, CMD='ext', EXT = b'User defined message')
         # Send extended command frame with user defined message to the source
         # of Data stream 3.
 
@@ -96,7 +96,7 @@ class Command(Message):
     }
 
     def __new__(self, IDCODE=1, CMD='off',
-                TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
+                TQ_FLAGS='0000', MSG_TQ='1111',
                 TIME_BASE=16777215,
                 USER_DEF='0000', EXT=b''
                 ):

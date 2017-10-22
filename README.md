@@ -1,6 +1,8 @@
 # PhasorToolBox
 
-The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing. This is a Python 3 package.
+The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.2-2011 Standard]) parser as well as tools that are easy to use and efficient for real-time parsing.
+
+Tested on RedHat 7.2 with Python 3.6
 
 ## Performance:
 
@@ -19,58 +21,8 @@ python3 parse_stream.py stream.bin
 ```
 ## Examples:
 
-#### Connection Tester:
-
-This example uses 10.0.0.1 and port 4712 as an example.
-```python
->>> from phasortoolbox import Client
->>> remote_pmu = Client(SERVER_IP='10.0.0.1',
-....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP', loop=loop)
->>> remote_pmu.connection_test()
-```
-If everything goes on well, you should see:
-```python
-Connected to 10.0.0.1             
-configuration_frame_2 received from 10.0.0.1                               
-Transmission ON. (Press 'Ctrl+C' to stop.)                                       
-\UTC: 10-05-2017 09:19:39.100000        59.98980712890625Hz
-```
-
-#### Parse packets on the fly:
-This might look complicated ... more explanations will be added
-```python
-import asyncio
-from datetime import datetime
-from phasortoolbox import Client
-from phasortoolbox import Parser
-
-def your_print_time_tag_fun(raw_pkt, a_parser):
-    message = a_parser.parse_message(raw_pkt)
-    time_tag = float(message.soc) + \
-                float(message.fracsec.fraction_of_second)
-    time_tag = datetime.utcfromtimestamp(
-        time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
-    print(time_tag)
-
-def main():
-    loop = asyncio.get_event_loop()
-    remote_pmu = Client(SERVER_IP='10.0.0.1',
-        SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP', loop=loop)
-    my_parser = Parser()
-    try:
-        loop.run_until_complete(
-            remote_pmu.transmit_callback(your_print_time_tag_fun, my_parser))
-    except KeyboardInterrupt:
-        loop.run_until_complete(remote_pmu.cleanup())
-
-if __name__ == '__main__':
-    main()
-```
-
-
-
-### Parse a binary stream:
-First lets read some bytes from previously recorded measurements:
+#### Parse a binary stream:
+First lets read some bytes from sample measurements. You could find the 'stream.bin' in this repo:
 ```python
 #!/usr/bin/env python3
 import phasortoolbox
@@ -87,6 +39,199 @@ Then you can access the data, e.g., the frequency value of station two stored in
 print('Frequency measurement in packet 200:', \
         measurement_data[199].data.pmu_data[1].freq,'Hz')
 ```
+#### Explore the message:
+
+#### Test a remote device and capture some sample packets:
+
+Assume you have a remote PMU use the IP over network communications running at "10.0.0.1" with "TCP-only" method, configured to listen to TCP 4712 port, IDCODE is 1 and accept connection from your IP.
+The following example will run forever. Press 'Ctrl+C' to stop.
+To run a quick test:
+```python
+>>> from phasortoolbox import Client
+>>> my_pmu = Client(SERVER_IP='10.0.0.1',
+....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP')
+>>> messages = my_pmu.test()
+```
+If everything goes on well, you should see something like this:
+```python
+Connecting to: 10.0.0.1 ...
+Connected to: ('10.0.0.1', 4712)
+Command "off" sent to 10.0.0.1
+Command "cfg2" sent to 10.0.0.1
+Command "on" sent to 10.0.0.1
+Network delay:0.0548s Local delay:0.0003s UTC: 10-22-2017 02:16:45.933333 59.9862Hz
+```
+
+To capture only 1 packet:
+```python
+>>> messages = my_pmu.test(count=1)
+```
+Then, you can check the received messages:
+```python
+>>> messages
+[[[<phasortoolbox.parser.common.Common object at 0x7f8c88423a90>]]]
+```
+
+#### Get aligned messages and integrate with your application:
+```python
+from phasortoolbox import PDC, Client, DevicesControl
+
+def my_print1(buffer_msgs):
+    time_tag = datetime.utcfromtimestamp(
+        buffer_msgs[-1][0].time).strftime(
+        "UTC: %m-%d-%Y %H:%M:%S.%f ")
+    freqlist = '\t'.join("%.4f" % (
+        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+        'No Data' for
+        my_msg in buffer_msgs[-1] for
+        pmu_d in my_msg.data.pmu_data)
+    print('fun1 '+time_tag+freqlist)
+
+def main():
+    my_devices = DevicesControl()
+
+    my_pdc1 = PDC()
+    my_pdc1.CALLBACK = my_print1
+
+    my_pmu1 = Client(SERVER_IP='10.0.0.1',
+              SERVER_TCP_PORT=4712, IDCODE=1)
+    my_pmu2 = Client(SERVER_IP='10.0.0.2',
+              SERVER_TCP_PORT=4712, IDCODE=2)
+    my_pmu3 = Client(SERVER_IP='10.0.0.3',
+              SERVER_TCP_PORT=4712, IDCODE=3)
+
+    my_devices.device_list = [my_pdc1, my_pmu1, my_pmu2, my_pmu3]
+
+    my_devices.connection_list = [
+    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1]]
+    ]
+
+    my_devices.run()
+
+if __name__ == '__main__':
+    main()
+```
+
+
+#### Get aligned messages and integrate with multipe applications:
+```python
+from phasortoolbox import PDC, Client, DevicesControl
+
+def my_print1(buffer_msgs):
+    time_tag = datetime.utcfromtimestamp(
+        buffer_msgs[-1][0].time).strftime(
+        "UTC: %m-%d-%Y %H:%M:%S.%f ")
+    freqlist = '\t'.join("%.4f" % (
+        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+        'No Data' for
+        my_msg in buffer_msgs[-1] for
+        pmu_d in my_msg.data.pmu_data)
+    print(time_tag+freqlist)
+
+
+def my_print2(buffer_msgs):
+    time_tag = datetime.utcfromtimestamp(
+        buffer_msgs[-1][0].time).strftime(
+        "UTC: %m-%d-%Y %H:%M:%S.%f ")
+    freqlist = '\t'.join("%.4f" % (
+        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+        'No Data' for
+        my_msg in buffer_msgs[-1] for
+        pmu_d in my_msg.data.pmu_data)
+    print('fun2 '+time_tag+freqlist)
+
+
+def main():
+    my_devices = DevicesControl()
+
+    my_pdc1 = PDC()
+    my_pdc1.CALLBACK = my_print1
+
+    my_pdc2 = PDC()
+    my_pdc2.CALLBACK = my_print2
+
+
+    my_pmu1 = Client(SERVER_IP='10.0.0.1',
+              SERVER_TCP_PORT=4712, IDCODE=1)
+    my_pmu2 = Client(SERVER_IP='10.0.0.2',
+              SERVER_TCP_PORT=4712, IDCODE=2)
+    my_pmu3 = Client(SERVER_IP='10.0.0.3',
+              SERVER_TCP_PORT=4712, IDCODE=3)
+
+    my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
+
+    my_devices.connection_list = [
+    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1,my_pdc2]]
+    ]
+
+    my_devices.run()
+
+if __name__ == '__main__':
+    main()
+```
+
+
+#### Multipe applications from different set of sources:
+```python
+from phasortoolbox import PDC, Client, DevicesControl
+
+def my_print1(buffer_msgs):
+    time_tag = datetime.utcfromtimestamp(
+        buffer_msgs[-1][0].time).strftime(
+        "UTC: %m-%d-%Y %H:%M:%S.%f ")
+    freqlist = '\t'.join("%.4f" % (
+        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+        'No Data' for
+        my_msg in buffer_msgs[-1] for
+        pmu_d in my_msg.data.pmu_data)
+    print(time_tag+freqlist)
+
+
+def my_print2(buffer_msgs):
+    time_tag = datetime.utcfromtimestamp(
+        buffer_msgs[-1][0].time).strftime(
+        "UTC: %m-%d-%Y %H:%M:%S.%f ")
+    freqlist = '\t'.join("%.4f" % (
+        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+        'No Data' for
+        my_msg in buffer_msgs[-1] for
+        pmu_d in my_msg.data.pmu_data)
+    print('fun2 '+time_tag+freqlist)
+
+
+def main():
+    my_devices = DevicesControl()
+
+    my_pdc1 = PDC()
+    my_pdc1.CALLBACK = my_print1
+
+    my_pdc2 = PDC()
+    my_pdc2.CALLBACK = my_print2
+
+
+    my_pmu1 = Client(SERVER_IP='10.0.0.1',
+              SERVER_TCP_PORT=4712, IDCODE=1)
+    my_pmu2 = Client(SERVER_IP='10.0.0.2',
+              SERVER_TCP_PORT=4712, IDCODE=2)
+    my_pmu3 = Client(SERVER_IP='10.0.0.3',
+              SERVER_TCP_PORT=4712, IDCODE=3)
+    my_pmu4 = Client(SERVER_IP='10.0.0.4',
+              SERVER_TCP_PORT=4712, IDCODE=4)
+
+    my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
+
+    my_devices.connection_list = [
+    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1]],
+    [[my_pmu2,my_pmu3,my_pmu4], [my_pdc2]]
+    ]
+
+    my_devices.run()
+
+if __name__ == '__main__':
+    main()
+```
+
+
 
 ### Some Features:
 The parser can store the configuration frames and parse the following measurement packet according to it.
@@ -101,19 +246,75 @@ The binary parser is created with the help of using [Kaitai Struct].
 
 ## Module Reference:
 
-##### phasortoolbox.Parser():
-##### phasortoolbox.Parser.parse():
-##### phasortoolbox.Parser.parse_message():
-##### phasortoolbox.Command():
+##### phasortoolbox.Parser(raw_cfg_pkt=None):
+A Parser that parses synchrphasor messages defined by IEEE Std C37.118.2-2011.
+
+Note:
+    When parsing a stream, the parser automatically detects and stores
+    configuration messages and use the most recent received configuration
+    message to parse the subsequent data messages. Multiple synchrophasor
+    message streams can be parsed using one parser instance. The parser
+    identifies each synchrophasor message stream by using its IDCODE and
+    then apply the corresponded configuration message to parse the data
+    message.
+
+Example:
+```python
+# The first example creates a command message and then creates a parser to
+parse the message.
+>>> my_msg = Command(CMD='off') # Creates a command message.
+>>> print(my_msg)               # Just to show the content.
+b'\xaaA\x00\x12\x00\x01Y\xec_\xc5\x0ft\x1e#\x00\x01\xbe\x95'
+>>> my_parser = Parser()        # Creates a parser
+>>> my_msgs = my_parser.parse(my_msg)  # Parse the previously created mseeage\
+                                and returns a list of parsed messages
+>>> print(my_msgs[0].data.cmd.name) # Print the contant of the command
+turn_off_transmission_of_data_frames
+```
+##### phasortoolbox.Parser.parse(raw_byte):
+
+
+##### phasortoolbox.Command(IDCODE=1, CMD='off',TQ_FLAGS='0000', MSG_TQ='1111', TIME_BASE=16777215, USER_DEF='0000', EXT=b''):
+This object returns a command message in bytes.
+The CMD can be one of: 'off','on','hdr','cfg1','cfg2','cfg3','ext'.
+Example usage:
+```python
+# Data stream 1 turn on transmission:
+my_msg = Command(1,'on') 
+# Data stream 2 turn off transmission:
+my_msg = Command(IDCODE=2, CMD='off') 
+# Send extended command frame with user defined message to the source of Data stream 3:
+my_msg = Command(IDCODE=3, CMD='ext', EXT = b'User defined message')
+```
 ##### phasortoolbox.Client():
-##### phasortoolbox.Client.connection_test():
-##### phasortoolbox.Client.transmit_callback():
-##### phasortoolbox.Client.connect():
-##### phasortoolbox.Client.send_command():
-##### phasortoolbox.Client.receive_conf():
-##### phasortoolbox.Client.receive_data_message():
-##### phasortoolbox.Client.close_connection():
-##### phasortoolbox.Client.cleanup():
+A synchrphaor protocol connection clinet.
+
+Connects to any devices that follow IEEE Std C37.118.2-2011, send
+commands, and receiving data.
+According to IEEE Std C37.118.2-2011 'The device providing data is the
+server and the device receiving data is the client.'
+
+Examples:
+```python
+# To quickly test a remote host:
+my_pmu = Client(SERVER_IP='10.0.0.1',
+          SERVER_TCP_PORT=4712, IDCODE=1)
+my_pmu.test()
+```
+For most of the times, there is no need to directly access any methods in
+this module after initiate. Use the phasortoolbox.DevicesControl() to
+control this device instead.
+##### phasortoolbox.Client.test(v=True, sample=True, count=0):
+Run a quick connection test.
+Return captured messages when sample is set to True.
+Stop running after capturing 'count' packets if count is not 0. 
+Inline print brief info about received messages if v is set to True. 
+##### phasortoolbox.PDC():
+##### phasortoolbox.PDC.CALLBACK(buffer_msgs):
+##### phasortoolbox.DevicesControl():
+##### phasortoolbox.DevicesControl.run():
+
+
 
 
 

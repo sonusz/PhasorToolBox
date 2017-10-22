@@ -42,6 +42,7 @@ class Client(object):
         loop: asyncio.AbstractEventLoop() = None,
         executor: futures.Executor() = None,
         parser: Parser() = None,
+        count=0
     ):
         self.IDCODE = IDCODE
         self.SERVER_IP = SERVER_IP
@@ -60,8 +61,10 @@ class Client(object):
         else:
             self.parser = Parser()
         self._output_list = []
+        self.count = count
         if self.MODE == 'TCP':
             async def connect():
+                self._count = count
                 print('Connecting to:', self.SERVER_IP, '...')
                 await self.loop.create_connection(
                     lambda: self._TCP(self),
@@ -118,27 +121,52 @@ class Client(object):
 
         def data_received(self, data):
             asyncio.ensure_future(self.client.handle_message(data))
+            if self.client._count == 0:
+                return
+            elif self.client._count > 1:
+                self.client._count -= 1
+                return
+            elif self.client._count == 1:
+                asyncio.ensure_future(self.client.clean_up())
 
         def connection_lost(self, exc):
             print('Connection ', self.transport.get_extra_info(
                 'peername'), 'closed.')
 
-    def connection_test(self):
+    def test(self, v=True, sample=True, count=0):
+        class _mem(object):
+            def __init__(self, v=True, sample=True):
+                self._buf = []
+                self.v = v
+                self.sample = sample
+
+            def add_msg(self, buffer_msgs):
+                if self.sample:
+                    self._buf.append(buffer_msgs)
+                if self.v:
+                    now = time.time()
+                    time_tag = datetime.utcfromtimestamp(
+                        buffer_msgs[-1][0].time).strftime(
+                        "UTC: %m-%d-%Y %H:%M:%S.%f")
+                    freqlist = '\t'.join("%.4f" % (
+                        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+                        'No Data' for
+                        my_msg in buffer_msgs[-1] for
+                        pmu_d in my_msg.data.pmu_data)
+                    sys.stdout.write(
+                        "Network delay:%.4fs Local delay:%.4fs " % (
+                            now - buffer_msgs[-1][0].time,
+                            now - buffer_msgs[-1][0]._arrtime
+                        ) + time_tag + " " + freqlist + "\r"
+                    )
+                    sys.stdout.flush()
+        _tm = _mem(v=v, sample=sample)
         _my_pdc = PDC()
-        _my_pdc.callback = self._in_line_print
+        _my_pdc.count = count
+        _my_pdc.CALLBACK = _tm.add_msg
         _my_devices = DevicesControl()
         _my_devices.connection_list = [[[self], [_my_pdc]]]
         _my_devices.device_list = [self, _my_pdc]
         _my_devices.run()
-
-
-    def _in_line_print(self, buffer_msgs):
-        message = buffer_msgs[0][0]
-        time_tag = message.time
-        time_tag = datetime.utcfromtimestamp(
-            time_tag).strftime("UTC: %m-%d-%Y %H:%M:%S.%f")
-        freqlist = [str(my_msg.data.pmu_data[0].freq) + 'Hz\t' for my_msg in buffer_msgs[0]]
-        status = time_tag + '\t' + ''.join(freqlist)
-        sys.stdout.write(status + "\r")
-        sys.stdout.flush()
-
+        if sample:
+            return _tm._buf
