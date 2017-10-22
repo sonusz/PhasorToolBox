@@ -32,11 +32,9 @@ class Message(bytes):
 
     def __new__(
             self, SYNC=b'\xaa\x01', IDCODE=1,
-            TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
+            TIME, TQ_FLAGS='0000', MSG_TQ='1111',
             TIME_BASE=16777215, DATA=b''):
         FRAMESIZE = (len(DATA) + 16).to_bytes(2, 'big')
-        if TIME == 'NOW':
-            TIME = time.time()
         SOC_FRACSEC = b''.join((
             int(TIME).to_bytes(4, 'big'), int(TQ_FLAGS + MSG_TQ, 2).to_bytes(
                 1, 'big'), int(TIME % 1 * TIME_BASE).to_bytes(3, 'big')))
@@ -100,6 +98,7 @@ class Command(Message):
                 TIME_BASE=16777215,
                 USER_DEF='0000', EXT=b''
                 ):
+        TIME = time.time()
         return super(Command, self).__new__(
             self, SYNC=b'\xaaA', IDCODE=IDCODE,
             TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,

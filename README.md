@@ -4,6 +4,7 @@ The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.
 
 Tested on RedHat 7.2 with Python 3.6
 
+
 ## Performance:
 
 The average times take to parse a single packet with the parser module is around 0.85 ms on a 2012 mac laptop.
@@ -19,9 +20,12 @@ cd PhasorToolBox/
 python3 setup.py install
 python3 parse_stream.py stream.bin
 ```
+
+
 ## Examples:
 
 #### Parse a binary stream:
+
 First lets read some bytes from sample measurements. You could find the 'stream.bin' in this repo:
 ```python
 #!/usr/bin/env python3
@@ -39,7 +43,12 @@ Then you can access the data, e.g., the frequency value of station two stored in
 print('Frequency measurement in packet 200:', \
         measurement_data[199].data.pmu_data[1].freq,'Hz')
 ```
+
+
 #### Explore the message:
+TBA
+
+
 
 #### Test a remote device and capture some sample packets:
 
@@ -62,6 +71,7 @@ Command "on" sent to 10.0.0.1
 Network delay:0.0548s Local delay:0.0003s UTC: 10-22-2017 02:16:45.933333 59.9862Hz
 ```
 
+
 To capture only 1 packet:
 ```python
 >>> messages = my_pmu.test(count=1)
@@ -72,7 +82,9 @@ Then, you can check the received messages:
 [[[<phasortoolbox.parser.common.Common object at 0x7f8c88423a90>]]]
 ```
 
+
 #### Get aligned messages and integrate with your application:
+
 ```python
 from phasortoolbox import PDC, Client, DevicesControl
 
@@ -110,6 +122,7 @@ if __name__ == '__main__':
 
 
 #### Get aligned messages and integrate with multipe applications:
+
 Just creat another pdc and function. 
 ```python
 def my_print2(buffer_msgs):
@@ -135,6 +148,7 @@ my_devices.run()
 
 
 #### Multipe applications from different set of sources:
+
 ```python
 my_devices.connection_list = [
     [[my_pmu1,my_pmu2], [my_pdc1]],
@@ -145,8 +159,8 @@ my_devices.run()
 ```
 
 
-
 ### Some Features:
+
 The parser can store the configuration frames and parse the following measurement packet according to it.
 A parser instance can parse multiple data streams. This is useful when multiple PMU streams are captured and stored in the same file. However, each data stream must have unique 'IDCODE'. The IDCODE is used to identify which configuration frame should be used to parse a data frame.
 
@@ -154,7 +168,6 @@ A parser instance can parse multiple data streams. This is useful when multiple 
 UTF-8, instead of ASCII, is used to parse human readable fields.
 Configuration frame 3 is supported, but not tested. 
 The binary parser is created with the help of using [Kaitai Struct].
-
 
 
 ## Module Reference:
@@ -179,9 +192,9 @@ parse the message.
 >>> print(my_msg)               # Just to show the content.
 b'\xaaA\x00\x12\x00\x01Y\xec_\xc5\x0ft\x1e#\x00\x01\xbe\x95'
 >>> my_parser = Parser()        # Creates a parser
->>> my_msgs = my_parser.parse(my_msg)  # Parse the previously created mseeage\
-                                and returns a list of parsed messages
->>> print(my_msgs[0].data.cmd.name) # Print the contant of the command
+>>> my_msgs = my_parser.parse(my_msg)  # Parse the previously created mseeage
+                                       # and returns a list of parsed messages
+>>> print(my_msgs[0].data.cmd.name)    # Print the contant of the command
 turn_off_transmission_of_data_frames
 ```
 ##### phasortoolbox.Parser.parse(raw_byte):
