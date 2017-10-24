@@ -4,7 +4,7 @@ import time
 import binascii
 
 
-class Message(bytes):
+class Message():
     """This object returns a synchrophasor message in bytes.
     It would be easier to use classes that inherited from this class,
     such as command(), data(), cfg2()
@@ -31,22 +31,30 @@ class Message(bytes):
     """
 
     def __new__(
-            self, SYNC=b'\xaa\x01', IDCODE=1,
-            TIME='NOW', TQ_FLAGS='0000', MSG_TQ='1111',
-            TIME_BASE=16777215, DATA=b''):
-        FRAMESIZE = (len(DATA) + 16).to_bytes(2, 'big')
-        if TIME == 'NOW':
-            TIME = time.time()
-        SOC_FRACSEC = b''.join((
-            int(TIME).to_bytes(4, 'big'), int(TQ_FLAGS + MSG_TQ, 2).to_bytes(
-                1, 'big'), int(TIME % 1 * TIME_BASE).to_bytes(3, 'big')))
-        raw_data = b''.join((SYNC, FRAMESIZE,
-                             IDCODE.to_bytes(2, 'big'), SOC_FRACSEC, DATA))
-        raw_data += binascii.crc_hqx(raw_data, -1).to_bytes(2, 'big')
-        return super(Message, self).__new__(self, raw_data)
+            self,
+            SYNC=b'\xaa\x01',
+            IDCODE=1,
+            TIME=None,
+            TQ_FLAGS='0000',
+            MSG_TQ='1111',
+            TIME_BASE=16777215,
+            DATA=b''
+    ):
+        TIME = time.time() if not TIME else TIME
+        raw_data = b''.join((
+            SYNC,
+            (len(DATA) + 16).to_bytes(2, 'big'),  # FRAMESIZE
+            IDCODE.to_bytes(2, 'big'),
+            int(TIME).to_bytes(4, 'big'),         # SOC
+            int(TQ_FLAGS + MSG_TQ, 2).to_bytes(1, 'big'),
+            int(TIME % 1 * TIME_BASE).to_bytes(3, 'big'),  # Frac of sec
+            DATA
+        ))
+        chk_sum = binascii.crc_hqx(raw_data, -1).to_bytes(2, 'big')
+        return bytes.__new__(bytes, raw_data+chk_sum)
 
 
-class Command(Message):
+class Command():
     """This object returns a command message in bytes.
     Note:
         This creates a Version 1 (0001) command message defined by IEEE Std
@@ -85,6 +93,7 @@ class Command(Message):
         EXT (bytes)     :Extended frame data, 16-bit words, 0 to 65518
                         bytes as indicated by frame size, data user defined.
     """
+
     CommandCode = {
         'off': 1,
         'on': 2,
@@ -95,16 +104,28 @@ class Command(Message):
         'ext': 8
     }
 
-    def __new__(self, IDCODE=1, CMD='off',
-                TQ_FLAGS='0000', MSG_TQ='1111',
-                TIME_BASE=16777215,
-                USER_DEF='0000', EXT=b''
-                ):
-        TIME = time.time()
-        return super(Command, self).__new__(
-            self, SYNC=b'\xaaA', IDCODE=IDCODE,
-            TIME=TIME, TQ_FLAGS=TQ_FLAGS, MSG_TQ=MSG_TQ,
-            TIME_BASE=16777215,
-            DATA=b''.join((int('0000' + USER_DEF, 2).to_bytes(1, 'big'),
-                           self.CommandCode[CMD].to_bytes(1, 'big'), EXT))
+    def __new__(
+        self,
+        IDCODE=1,
+        CMD='off',
+        TIME=None,
+        TQ_FLAGS='0000',
+        MSG_TQ='1111',
+        TIME_BASE=16777215,
+        USER_DEF='0000',
+        EXT=b''
+    ):
+        return Message.__new__(
+            Message,
+            SYNC=b'\xaaA',
+            IDCODE=IDCODE,
+            TIME=TIME,
+            TQ_FLAGS=TQ_FLAGS,
+            MSG_TQ=MSG_TQ,
+            TIME_BASE=TIME_BASE,
+            DATA=b''.join((
+                int('0000'+USER_DEF, 2).to_bytes(1, 'big'),
+                self.CommandCode[CMD].to_bytes(1, 'big'),
+                EXT
+            ))
         )

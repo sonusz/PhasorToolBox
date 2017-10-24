@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
-from .common import Common
+from .common import PhasorMessage
 from .minicfg import MiniCfgs
 
 
@@ -43,6 +43,6 @@ class Parser(object):
         self._raw_data = raw_bytes
         _io = KaitaiStream(BytesIO(self._raw_data))
         while not _io.is_eof():
-            message = Common(_io, _mini_cfgs=self._mini_cfgs)
+            message = PhasorMessage(_io, _mini_cfgs=self._mini_cfgs)
             stream.append(message)
         return stream

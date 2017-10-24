@@ -1,0 +1,2 @@
+kaitaistruct>=0.7
+uvloop

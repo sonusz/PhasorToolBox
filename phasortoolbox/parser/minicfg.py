@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
-from .common import Common
+from .common import PhasorMessage
 
 
 class MiniCfgs(object):

@@ -18,7 +18,49 @@ from .cfg_3 import Cfg3
 from .command import Command
 
 
-class Common(KaitaiStruct):
+def _kaitai_repr(self):
+    _repr_list = []
+    for item in vars(self):
+        if not item.startswith('_'):
+            _r = getattr(self, item)
+            if type(_r) in (int, float, str):
+                _repr_list.append("=".join((item, _r.__repr__())))
+            else:
+                _repr_list.append(item)
+    return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
+
+
+def _enum_repr(self):
+    _repr_list = []
+    for item in ("name", "value"):
+        _r = getattr(self, item)
+        _repr_list.append("=".join((item, _r.__repr__())))
+    return "<"+self.__class__.__name__[:-4]+" |"+", ".join(_repr_list)+">"
+
+KaitaiStruct.__repr__ = _kaitai_repr
+Enum.__repr__ = _enum_repr
+
+
+class PhasorMessage(KaitaiStruct):
+    def __repr__(self):
+        _repr_list = ["time="+str(self.time)] if self.fracsec.fraction_of_second else []
+        for item in vars(self):
+            if not item.startswith('_'):
+                _r = getattr(self, item)
+                if type(_r) in (int, float, str):
+                    _repr_list.append("=".join((item, _r.__repr__())))
+                else:
+                    _repr_list.append(item)
+        return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
+
+    def show(self):
+        _repr_list = []
+        for item in vars(self):
+            if not item.startswith('_'):
+                _r = getattr(self, item)
+                _repr_list.append("=".join((item, _r.__repr__())))
+        return "<"+self.__class__.__name__+"|"+", ".join(_repr_list)+">"
+
     def __init__(self, _io, _parent=None, _root=None, _mini_cfgs=None):
         self._io = _io
         self._parent = _parent
@@ -91,6 +133,16 @@ class Common(KaitaiStruct):
             self.version_number = self._root.SyncWord.VersionNumberEnum(self._io.read_bits_int(4))
 
     class Fracsec(KaitaiStruct):
+        def __repr__(self):
+            _repr_list = ["fraction_of_second="+str(self.fraction_of_second)] if self.fraction_of_second else []
+            for item in vars(self):
+                if not item.startswith('_'):
+                    _r = getattr(self, item)
+                    if type(_r) in (int, float, str):
+                        _repr_list.append("=".join((item, _r.__repr__())))
+                    else:
+                        _repr_list.append(item)
+            return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
 
         class LeapSecondDirectionEnum(Enum):
             add = 0

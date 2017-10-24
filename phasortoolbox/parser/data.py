@@ -49,11 +49,11 @@ class Data(KaitaiStruct):
 
             self.freq = self._root.PmuData.Freq(
                 self._io, self, self._root).freq.freq
-            self.dfreq = self._root.PmuData.Dfreq(self._io, self, self._root)
+            self.dfreq = self._root.PmuData.Dfreq(self._io, self, self._root).dfreq.dfreq
             self.analog = [None] * (self._station.annmr)
             for i in range(self._station.annmr):
                 self.analog[i] = self._root.PmuData.Analog(
-                    self._io, self, self._root, self._station.anunit[i])
+                    self._io, self, self._root, self._station.anunit[i]).analog.analog
 
             self.digital = [None] * (self._station.dgnmr)
             for i in range(self._station.dgnmr):
@@ -232,6 +232,13 @@ class Data(KaitaiStruct):
                     return self._m_dfreq if hasattr(self, '_m_dfreq') else None
 
         class Phasors(KaitaiStruct):
+            def __repr__(self):
+                    _repr_list = []
+                    for item in ["real", "imaginary", "magnitude", "angle"]:
+                        _r = getattr(self, item)
+                        _repr_list.append("=".join((item, _r.__repr__())))
+                    return "<Phasors |"+", ".join(_repr_list)+">"
+
             @property
             def real(self):
                 return self.phasors.phasors.real
