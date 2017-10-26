@@ -148,8 +148,8 @@ class Client(object):
                     time_tag = datetime.utcfromtimestamp(
                         buffer_msgs[-1][0].time).strftime(
                         "UTC: %m-%d-%Y %H:%M:%S.%f")
-                    freqlist = '\t'.join("%.4f" % (
-                        pmu_d.freq) + 'Hz\t' if my_msg is not None else
+                    freqlist = ' '.join("%.4f" % (
+                        pmu_d.freq) + 'Hz ' if my_msg is not None else
                         'No Data' for
                         my_msg in buffer_msgs[-1] for
                         pmu_d in my_msg.data.pmu_data)

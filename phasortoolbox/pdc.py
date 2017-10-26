@@ -162,7 +162,7 @@ class PDC(object):
                 ###############################################################
                 # Remove time out data from _buf
                 _del_list = []
-                if _temp_send_list:
+                if len(_temp_send_list) == self.BUF_SIZE:
                     # Remove all data until the last one sent
                     for time_tag in self._buf_index:
                         _del_list.append(time_tag)
