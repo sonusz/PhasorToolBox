@@ -1,11 +1,55 @@
 #!/usr/bin/env python3
+import struct
 import asyncio
 from concurrent import futures
 import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
-class DevicesControl(object):
+class UDPDevice(object):
+    def __init__(
+        self,
+        REMOTE_IP,
+        REMOTE_PORT,
+        loop: asyncio.AbstractEventLoop() = None,
+        executor: futures.Executor() = None
+    ):
+        self._input_list = []
+        self._input_queue = asyncio.Queue()
+        if loop:
+            self.loop = loop
+        else:
+            self.loop = asyncio.get_event_loop()
+        self.executor = executor
+        self.REMOTE_IP = REMOTE_IP
+        self.REMOTE_PORT = REMOTE_PORT
+
+    async def run(self):
+        transport, protocol = await self.loop.create_datagram_endpoint(
+            lambda: self.UDPProtocol(self.loop),
+            remote_addr=(self.REMOTE_IP, self.REMOTE_PORT)
+        )
+        while True:
+            try:
+                msg = await self._input_queue.get()
+                print(msg)
+                transport.sendto(msg)
+            except asyncio.CancelledError:
+                break
+
+    async def clean_up(self):
+        pass
+
+    class UDPProtocol:
+        def __init__(self, loop):
+            self.loop = loop
+            self.transport = None
+
+        def connection_made(self, transport):
+            self.transport = transport
+
+
+class DeviceControl(object):
     """An event loop warper.
 
     Use this controler to schedule the 'run()' function designed in each
@@ -13,7 +57,7 @@ class DevicesControl(object):
 
     Examples:
         #To create a network that two PDCs are getting data from three PMUs:
-        my_devices = DevicesControl()
+        my_devices = DeviceControl()
         my_pdc1 = PDC()
         my_pdc2 = PDC()
         my_pmu1 = Client(SERVER_IP='10.0.0.1',

@@ -39,6 +39,7 @@ class PDC(object):
         self.step_time = step_time
         self.buf_time_out = self.BUF_SIZE * self.WAIT_TIME * 2
         self._input_list = []
+        self._output_list = []
         self._input_queue = asyncio.Queue()
         if loop:
             self.loop = loop
@@ -50,7 +51,7 @@ class PDC(object):
         self.returnNone = returnNone
         self.count = count
 
-    async def run(self):
+    async def run(self, count=None):
         if not self._input_list:
             print('No input defined.')
             return
@@ -63,7 +64,8 @@ class PDC(object):
                             "not {!r}".format(type(self.CALLBACK)))
         self._buf = {}
         self._buf_index = deque()
-        count = self.count
+        if not count:
+            count = self.count
         while True:
             try:
                 ###############################################################
@@ -144,7 +146,11 @@ class PDC(object):
                     ]
                     # self.loop.run_in_executor(
                     #    self.executor, self.CALLBACK, buffer_msgs)
-                    self.CALLBACK(buffer_msgs)  # Call user's function
+                    _usr_buffer_msgs = self.CALLBACK(
+                        buffer_msgs)  # Call user's function
+                    if _usr_buffer_msgs:
+                        for _devices in self._output_list:
+                            await _devices._input_queue.put(_usr_buffer_msgs)
                     if count == 0:
                         pass
                     elif count > 1:

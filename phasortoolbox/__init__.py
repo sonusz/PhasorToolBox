@@ -2,5 +2,5 @@
 
 from .parser import Parser
 from .pdc import PDC
-from .devices import DevicesControl
+from .devices import DeviceControl, UDPDevice
 from .client import Client

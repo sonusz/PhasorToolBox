@@ -17,7 +17,7 @@ The methods provided by the client module are coroutines. That makes it possible
 ```bash
 git clone https://github.com/sonusz/PhasorToolBox.git
 cd PhasorToolBox/
-python3 setup.py install
+python3 setup.py install --user  --prefix=
 python3 parse_stream.py stream.bin
 ```
 
@@ -86,7 +86,7 @@ Then, you can check the received messages:
 #### Get aligned messages and integrate with your application:
 
 ```python
-from phasortoolbox import PDC, Client, DevicesControl
+from phasortoolbox import PDC, Client, DeviceControl
 
 def my_print1(buffer_msgs):
     freqlist = ' '.join("%.4f" % (
@@ -96,7 +96,7 @@ def my_print1(buffer_msgs):
     print('fun1 '+freqlist)
 
 def main():
-    my_devices = DevicesControl()
+    my_devices = DeviceControl()
 
     my_pdc1 = PDC()
     my_pdc1.CALLBACK = my_print1
@@ -228,7 +228,7 @@ my_pmu = Client(SERVER_IP='10.0.0.1',
 my_pmu.test()
 ```
 For most of the times, there is no need to directly access any methods in
-this module after initiate. Use the phasortoolbox.DevicesControl() to
+this module after initiate. Use the phasortoolbox.DeviceControl() to
 control this device instead.
 ##### phasortoolbox.Client.test(v=True, sample=True, count=0):
 Run a quick connection test.
@@ -237,8 +237,8 @@ Stop running after capturing 'count' packets if count is not 0.
 Inline print brief info about received messages if v is set to True. 
 ##### phasortoolbox.PDC():
 ##### phasortoolbox.PDC.CALLBACK(buffer_msgs):
-##### phasortoolbox.DevicesControl():
-##### phasortoolbox.DevicesControl.run():
+##### phasortoolbox.DeviceControl():
+##### phasortoolbox.DeviceControl.run():
 
 
 

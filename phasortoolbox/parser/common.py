@@ -9,7 +9,8 @@ from pkg_resources import parse_version
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 
 if parse_version(ks_version) < parse_version('0.7'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+    raise Exception(
+        "Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
 from .cfg_2 import Cfg2
 from .header import Header
@@ -23,11 +24,11 @@ def _kaitai_repr(self):
     for item in vars(self):
         if not item.startswith('_'):
             _r = getattr(self, item)
-            if type(_r) in (int, float, str):
+            if type(_r) in (int, float, str, bytes, bool):
                 _repr_list.append("=".join((item, _r.__repr__())))
             else:
                 _repr_list.append(item)
-    return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
+    return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
 
 
 def _enum_repr(self):
@@ -35,23 +36,26 @@ def _enum_repr(self):
     for item in ("name", "value"):
         _r = getattr(self, item)
         _repr_list.append("=".join((item, _r.__repr__())))
-    return "<"+self.__class__.__name__[:-4]+" |"+", ".join(_repr_list)+">"
-
-KaitaiStruct.__repr__ = _kaitai_repr
-Enum.__repr__ = _enum_repr
+    return "<" + self.__class__.__name__[:-4] + " |" + ", ".join(_repr_list) + ">"
 
 
 class PhasorMessage(KaitaiStruct):
+
+    KaitaiStruct.__repr__ = _kaitai_repr
+
+    Enum.__repr__ = _enum_repr
+
     def __repr__(self):
-        _repr_list = ["time="+str(self.time)] if self.fracsec.fraction_of_second else []
+        _repr_list = [
+            "time=" + str(self.time)] if self.fracsec.fraction_of_second else []
         for item in vars(self):
             if not item.startswith('_'):
                 _r = getattr(self, item)
-                if type(_r) in (int, float, str):
+                if type(_r) in (int, float, str, bytes):
                     _repr_list.append("=".join((item, _r.__repr__())))
                 else:
                     _repr_list.append(item)
-        return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
+        return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
 
     def show(self):
         _repr_list = []
@@ -59,7 +63,7 @@ class PhasorMessage(KaitaiStruct):
             if not item.startswith('_'):
                 _r = getattr(self, item)
                 _repr_list.append("=".join((item, _r.__repr__())))
-        return "<"+self.__class__.__name__+"|"+", ".join(_repr_list)+">"
+        return "<" + self.__class__.__name__ + "|" + ", ".join(_repr_list) + ">"
 
     def __init__(self, _io, _parent=None, _root=None, _mini_cfgs=None):
         self._io = _io
@@ -82,7 +86,7 @@ class PhasorMessage(KaitaiStruct):
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             if self._mini_cfg:
                 io = KaitaiStream(BytesIO(self._raw_data))
-                self.data = Data(io, _mini_cfg = self._mini_cfg)
+                self.data = Data(io, _mini_cfg=self._mini_cfg)
             else:
                 self.data = self._raw_data
         elif _on == 'cfg2':
@@ -129,12 +133,15 @@ class PhasorMessage(KaitaiStruct):
             self._root = _root if _root else self
             self.magic = self._io.ensure_fixed_contents(struct.pack('1b', -86))
             self.reserved = self._io.read_bits_int(1) != 0
-            self.frame_type = self._root.SyncWord.FrameTypeEnum(self._io.read_bits_int(3))
-            self.version_number = self._root.SyncWord.VersionNumberEnum(self._io.read_bits_int(4))
+            self.frame_type = self._root.SyncWord.FrameTypeEnum(
+                self._io.read_bits_int(3))
+            self.version_number = self._root.SyncWord.VersionNumberEnum(
+                self._io.read_bits_int(4))
 
     class Fracsec(KaitaiStruct):
         def __repr__(self):
-            _repr_list = ["fraction_of_second="+str(self.fraction_of_second)] if self.fraction_of_second else []
+            _repr_list = ["fraction_of_second=" +
+                          str(self.fraction_of_second)] if self.fraction_of_second else []
             for item in vars(self):
                 if not item.startswith('_'):
                     _r = getattr(self, item)
@@ -142,13 +149,13 @@ class PhasorMessage(KaitaiStruct):
                         _repr_list.append("=".join((item, _r.__repr__())))
                     else:
                         _repr_list.append(item)
-            return "<"+self.__class__.__name__+" |"+", ".join(_repr_list)+">"
+            return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
 
         class LeapSecondDirectionEnum(Enum):
             add = 0
             delete = 1
 
-        class MsgTq(Enum):
+        class MsgTqEnum(Enum):
             normal_operation_clock_locked_to_utc_traceable_source = 0
             time_within_10_to_9_s_of_utc = 1
             time_within_10_to_8_s_of_utc = 2
@@ -169,10 +176,12 @@ class PhasorMessage(KaitaiStruct):
             self._root = _root if _root else self
             self._time_base = _time_base
             self.reserved = self._io.read_bits_int(1) != 0
-            self.leap_second_direction = self._root.Fracsec.LeapSecondDirectionEnum(self._io.read_bits_int(1))
+            self.leap_second_direction = self._root.Fracsec.LeapSecondDirectionEnum(
+                self._io.read_bits_int(1))
             self.leap_second_occurred = self._io.read_bits_int(1) != 0
             self.leap_second_pending = self._io.read_bits_int(1) != 0
-            self.time_quality = self._root.Fracsec.MsgTq(self._io.read_bits_int(4))
+            self.time_quality = self._root.Fracsec.MsgTqEnum(
+                self._io.read_bits_int(4))
             self.raw_fraction_of_second = self._io.read_bits_int(24)
 
         @property

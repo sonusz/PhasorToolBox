@@ -5,7 +5,7 @@ import time
 import asyncio
 from concurrent import futures
 from phasortoolbox.message import Command
-from phasortoolbox import Parser, PDC, DevicesControl
+from phasortoolbox import Parser, PDC, DeviceControl
 import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -26,7 +26,7 @@ class Client(object):
         my_pmu.test()
 
     For most of the times, there is no need to directly access any methods in
-    this module after initiate. Use the phasortoolbox.DevicesControl() to
+    this module after initiate. Use the phasortoolbox.DeviceControl() to
     control this device instead.
     """
 
@@ -99,9 +99,9 @@ class Client(object):
         for msg in msgs:
             msg._arrtime = _arrtime
             msg._parse_time = _parse_time
-        for q in self._output_list:
+        for _devices in self._output_list:
             for msg in msgs:
-                await q._input_queue.put(msg)
+                await _devices._input_queue.put(msg)
 
     async def clean_up(self):
         await self.send_cmd('off')
@@ -164,7 +164,7 @@ class Client(object):
         _my_pdc = PDC()
         _my_pdc.count = count
         _my_pdc.CALLBACK = _tm.add_msg
-        _my_devices = DevicesControl()
+        _my_devices = DeviceControl()
         _my_devices.connection_list = [[[self], [_my_pdc]]]
         _my_devices.device_list = [self, _my_pdc]
         _my_devices.run()
