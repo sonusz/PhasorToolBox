@@ -12,4 +12,4 @@ However, not all data in the configuration message are necessary. It would be in
 So, we create two fields in the data.ksy that are not included in the standard synchrophasor protocol, which are cfg_2 and cfg_2_station. Those fields are only used to help the kaitaistruct compiler to compile and easier modification to get a working parser later. Those two fields are clearly marked in the data.ksy file.
 
 ### What needs to be modified
-After generating the targeted code, those two fields need to be replaced with structure and values previously got from the configuration message
+After generating the targeted code, those two fields need to be replaced with structure and values previously got from the configuration message.
