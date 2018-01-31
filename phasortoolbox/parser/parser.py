@@ -55,17 +55,16 @@ class PcapParser(object):
         self._parser = Parser()
 
     def from_pcap(self, file_name):
-        stream = []
         self._pcap = Pcap.from_file(file_name)
+        _r_stream = b''
         for pkt in self._pcap.packets:
             try:
                 _raw_data = pkt.body.body.body.body
-                _r = self._parser.parse(_raw_data)
-                for msg in _r:
-                    msg.arr_time = pkt.time_epoch
-                    stream.append(msg)
+                if _raw_data[0] == 170:  # _raw_data[0]
+                    _r_stream += _raw_data
             except Exception as e:
                 #print(e)
                 pass
-        return stream
+
+        return self._parser.parse(_r_stream)
 

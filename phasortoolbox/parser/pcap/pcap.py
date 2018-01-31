@@ -11,6 +11,7 @@ if parse_version(ks_version) < parse_version('0.7'):
 
 from .packet_ppi import PacketPpi
 from .ethernet_frame import EthernetFrame
+from .linux_sll import LinuxSll
 class Pcap(KaitaiStruct):
     """
     .. seealso::
@@ -187,6 +188,10 @@ class Pcap(KaitaiStruct):
                 self._raw_body = self._io.read_bytes(self.incl_len)
                 io = KaitaiStream(BytesIO(self._raw_body))
                 self.body = EthernetFrame(io)
+            elif _on == self._root.Linktype.linux_sll:
+                self._raw_body = self._io.read_bytes(self.incl_len)
+                io = KaitaiStream(BytesIO(self._raw_body))
+                self.body = LinuxSll(io)
             else:
                 self.body = self._io.read_bytes(self.incl_len)
 

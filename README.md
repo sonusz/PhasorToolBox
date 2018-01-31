@@ -5,9 +5,10 @@ The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.
 Tested on RedHat 7.2 with Python 3.6
 
 
-### Update 0.2
-Add PcapParser(). Now you can parse synchrophasor messages from a pcap file.
+### Update version 0.2 Jan 13, 2018
+Add PcapParser(). 
 
+Now you can parse synchrophasor messages from a pcap file.
 
 Usage:
 ```python
@@ -15,6 +16,7 @@ from phasortoolbox import PcapParser
 my_pcap_parser = PcapParser()
 msgs = my_pcap_parser.from_pcap('path/to/pcap/file.pcap')
 ```
+
 
 ## Performance:
 
