@@ -32,7 +32,6 @@ class UDPDevice(object):
         while True:
             try:
                 msg = await self._input_queue.get()
-                print(msg)
                 transport.sendto(msg)
             except asyncio.CancelledError:
                 break

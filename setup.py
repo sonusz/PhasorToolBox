@@ -6,7 +6,7 @@ requirements = ['kaitaistruct', 'uvloop']
 
 setup(
     name='phasortoolbox',
-    version='0.1',
+    version='0.2',
     description='Synchrophasor Protocol parser and tools ',
     author='Xingsi',
     url="https://github.com/sonusz/PhasorToolBox",

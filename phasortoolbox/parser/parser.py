@@ -3,6 +3,7 @@
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import PhasorMessage
 from .minicfg import MiniCfgs
+from .pcap import Pcap
 
 
 class Parser(object):
@@ -46,3 +47,25 @@ class Parser(object):
             message = PhasorMessage(_io, _mini_cfgs=self._mini_cfgs)
             stream.append(message)
         return stream
+
+class PcapParser(object):
+    """ A Parser that parses synchrphasor messages captured in pcap file
+    """
+    def __init__(self):
+        self._parser = Parser()
+
+    def from_pcap(self, file_name):
+        stream = []
+        self._pcap = Pcap.from_file(file_name)
+        for pkt in self._pcap.packets:
+            try:
+                _raw_data = pkt.body.body.body.body
+                _r = self._parser.parse(_raw_data)
+                for msg in _r:
+                    msg.arr_time = pkt.time_epoch
+                    stream.append(msg)
+            except Exception as e:
+                #print(e)
+                pass
+        return stream
+
