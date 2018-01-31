@@ -5,6 +5,14 @@ The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.
 Tested on RedHat 7.2 with Python 3.6
 
 
+### Update 0.2
+Add PcapParser(). Now you can parse synchrophasor messages from a pcap file.
+Usage:
+from phasortoolbox import PcapParser
+my_pcap_parser = PcapParser()
+msgs = my_pcap_parser.from_pcap('path/to/pcap/file.pcap')
+
+
 ## Performance:
 
 The average times take to parse a single packet with the parser module is around 0.85 ms on a 2012 mac laptop.
