@@ -5,6 +5,9 @@ The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.
 Tested on RedHat 7.2 with Python 3.6
 
 
+### Update Mar 16, 2018
+Add examples and tutorials in the example folder. 
+
 ### Update version 0.2 Jan 13, 2018
 Add PcapParser(). 
 
@@ -32,143 +35,6 @@ git clone https://github.com/sonusz/PhasorToolBox.git
 cd PhasorToolBox/
 python3 setup.py install --user  --prefix=
 python3 parse_stream.py stream.bin
-```
-
-
-## Examples:
-
-#### Parse a binary stream:
-
-First lets read some bytes from sample measurements. You could find the 'stream.bin' in this repo:
-```python
-#!/usr/bin/env python3
-import phasortoolbox
-with open('stream.bin', "rb") as f:
-    binary_data = f.read()  
-```
-Create a parser and parse the bytes:
-```python
-my_parser = phasortoolbox.Parser() # Create a parser.
-measurement_data = my_parser.parse(binary_data) # Parse It!
-```
-Then you can access the data, e.g., the frequency value of station two stored in packet 200:
-```python
-print('Frequency measurement in packet 200:', \
-        measurement_data[199].data.pmu_data[1].freq,'Hz')
-```
-
-
-#### Explore the message:
-TBA
-
-
-
-#### Test a remote device and capture some sample packets:
-
-Assume you have a remote PMU use the IP over network communications running at "10.0.0.1" with "TCP-only" method, configured to listen to TCP 4712 port, IDCODE is 1 and accept connection from your IP.
-The following example will run forever. Press 'Ctrl+C' to stop.
-To run a quick test:
-```python
->>> from phasortoolbox import Client
->>> my_pmu = Client(SERVER_IP='10.0.0.1',
-....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP')
->>> messages = my_pmu.test()
-```
-If everything goes on well, you should see something like this:
-```python
-Connecting to: 10.0.0.1 ...
-Connected to: ('10.0.0.1', 4712)
-Command "off" sent to 10.0.0.1
-Command "cfg2" sent to 10.0.0.1
-Command "on" sent to 10.0.0.1
-Network delay:0.0548s Local delay:0.0003s UTC: 10-22-2017 02:16:45.933333 59.9862Hz
-```
-
-
-To capture only 1 packet:
-```python
->>> messages = my_pmu.test(count=1)
-```
-Then, you can check the received messages:
-```python
->>> messages
-[[[<phasortoolbox.parser.common.Common object at 0x7f8c88423a90>]]]
-```
-
-
-#### Get aligned messages and integrate with your application:
-
-```python
-from phasortoolbox import PDC, Client, DeviceControl
-
-def my_print1(buffer_msgs):
-    freqlist = ' '.join("%.4f" % (
-        pmu_d.freq) + 'Hz' for
-        my_msg in buffer_msgs[-1] for
-        pmu_d in my_msg.data.pmu_data)
-    print('fun1 '+freqlist)
-
-def main():
-    my_devices = DeviceControl()
-
-    my_pdc1 = PDC()
-    my_pdc1.CALLBACK = my_print1
-
-    my_pmu1 = Client(SERVER_IP='10.0.0.1',
-              SERVER_TCP_PORT=4712, IDCODE=1)
-    my_pmu2 = Client(SERVER_IP='10.0.0.2',
-              SERVER_TCP_PORT=4712, IDCODE=2)
-    my_pmu3 = Client(SERVER_IP='10.0.0.3',
-              SERVER_TCP_PORT=4712, IDCODE=3)
-
-    my_devices.device_list = [my_pdc1, my_pmu1, my_pmu2, my_pmu3]
-
-    my_devices.connection_list = [
-    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1]]
-    ]
-
-    my_devices.run()
-
-if __name__ == '__main__':
-    main()
-```
-
-
-#### Get aligned messages and integrate with multipe applications:
-
-Just creat another pdc and function. 
-```python
-def my_print2(buffer_msgs):
-    freqlist = ' '.join("%.4f" % (
-        pmu_d.freq) + 'Hz' for
-        my_msg in buffer_msgs[-1] for
-        pmu_d in my_msg.data.pmu_data)
-    print('fun2 '+freqlist)
-
-my_pdc2 = PDC()
-my_pdc2.CALLBACK = my_print2
-```
-
-Then change above connection_list to:
-```python
-my_devices.connection_list = [
-    [[my_pmu1,my_pmu2,my_pmu3], [my_pdc1,my_pdc2]]
-    ]
-my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
-my_devices.run()
-
-```
-
-
-#### Multipe applications from different set of sources:
-
-```python
-my_devices.connection_list = [
-    [[my_pmu1,my_pmu2], [my_pdc1]],
-    [[my_pmu2,my_pmu3], [my_pdc2]]
-    ]
-my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
-my_devices.run()
 ```
 
 
