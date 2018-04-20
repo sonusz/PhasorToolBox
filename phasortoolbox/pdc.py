@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 import bisect
-from collections import defaultdict
+from collections import defaultdict, UserList
 import asyncio
 from concurrent import futures
 from phasortoolbox import Parser
@@ -28,7 +28,7 @@ class PDC(object):
         returnNone=False,
         # returnNone determines if partially received record should be discarded when timeout. Record will be discarded on False; None will be used as place holder and return partially received record on True.
         WAIT_TIME=0.1,  # The max time to wait for each time tag, will return None if returnNone is True
-        count=0,
+        count=0,  # Stop after received this number of time tags.
         FILTER={'data'},  # Type of PMU message will be processed
         loop: asyncio.AbstractEventLoop()=None,
         executor: futures.Executor()=None,
@@ -121,13 +121,15 @@ class PDC(object):
                 if len(_temp_send_list) == self.BUF_SIZE:
                     # Will not do anything if not enough data to send
                     # Prepare send msgs and call user defined function
-                    buffer_msgs = [
+                    buffer_msgs = UserList([
                         [
                             self._buf[time_tag][idcode] for idcode in
                             self._idcode_list
                         ]
                         for time_tag in reversed(_temp_send_list)
-                    ]
+                    ])
+                    buffer_msgs.time_tags = list(reversed(_temp_send_list))
+                    buffer_msgs.dict = {buffer_msgs.time_tags[i]:buffer_msgs.data[i] for i in range(len(buffer_msgs))}
                     # self.loop.run_in_executor(
                     #    self.executor, self.CALLBACK, buffer_msgs)
                     _usr_buffer_msgs = self.CALLBACK(
