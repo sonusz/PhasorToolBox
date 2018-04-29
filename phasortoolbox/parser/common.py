@@ -1,5 +1,4 @@
 # This is modified from a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
-
 import array
 import struct
 import zlib
@@ -73,33 +72,27 @@ class PhasorMessage(KaitaiStruct):
         self.sync = self._root.SyncWord(self._io, self, self._root)
         self.framesize = self._io.read_u2be()
         self.idcode = self._io.read_u2be()
-        self._mini_cfgs = _mini_cfgs
-        try:
-            self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
-        except:
-            self._mini_cfg = None
+        self._mini_cfg = _mini_cfgs.mini_cfg[self.idcode]
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
                                           self._mini_cfg.time_base.time_base if self._mini_cfg else None)
         _on = self.sync.frame_type.name
         if _on == 'data':
-            self._raw_data = self._io.read_bytes((self.framesize - 16))
             if self._mini_cfg:
-                io = KaitaiStream(BytesIO(self._raw_data))
-                self.data = Data(io, _mini_cfg=self._mini_cfg)
+                self.data = Data(self._io, _mini_cfg=self._mini_cfg)
             else:
-                self.data = self._raw_data
+                self.data = self._io.read_bytes((self.framesize - 16))
         elif _on == 'cfg2':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
-            self._mini_cfgs.add_cfg(self.idcode, self.data)
+            _mini_cfgs.add_cfg(self.idcode, self.data)
         elif _on == 'cmd':
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Command(io)
         elif _on == 'cfg3':
-            self._mini_cfgs.add_cfg(self.raw_pkt)
+            _mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg3(io)

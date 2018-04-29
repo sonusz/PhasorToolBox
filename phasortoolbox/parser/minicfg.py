@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import PhasorMessage
 
 
 class MiniCfgs(object):
     def __init__(self):
-        self.mini_cfg = {}
+        self.mini_cfg = defaultdict(lambda: None)
 
     def add_cfg(self, _cfg_pkt_idcode, _cfg_pkt_data):
         self.mini_cfg[_cfg_pkt_idcode] = MiniCfg(_cfg_pkt_data)

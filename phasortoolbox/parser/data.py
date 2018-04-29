@@ -58,7 +58,6 @@ class Data(KaitaiStruct):
             self.digital = [None] * (self._station.dgnmr)
             for i in range(self._station.dgnmr):
                 self.digital[i] = self._io.read_bits_int(16)
-
         class Freq(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io

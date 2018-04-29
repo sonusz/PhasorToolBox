@@ -30,23 +30,24 @@ class Parser(object):
         print(my_msgs[0].data.cmd.name) # Print the contant of the command
     """
 
-    def __init__(self, raw_cfg_pkt: bytes = None):
+    def __init__(self, raw_cfg_pkt=None):
         self._mini_cfgs = MiniCfgs()
         if raw_cfg_pkt:
             self.parse(raw_cfg_pkt)
 
-    def parse(self, raw_bytes: bytes):
+    def parse(self, raw_bytes):
         """Parse synchrphasor message stream
 
 
         """
         stream = []
-        self._raw_data = raw_bytes
-        _io = KaitaiStream(BytesIO(self._raw_data))
+        _io = KaitaiStream(BytesIO(raw_bytes))
         while not _io.is_eof():
             message = PhasorMessage(_io, _mini_cfgs=self._mini_cfgs)
-            stream.append(message)
+            if type(message.data) != type(b''):
+                stream.append(message)
         return stream
+
 
 class PcapParser(object):
     """ A Parser that parses synchrphasor messages captured in pcap file
