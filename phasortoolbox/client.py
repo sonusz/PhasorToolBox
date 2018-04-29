@@ -1,172 +1,206 @@
 #!/usr/bin/env python3
-import sys
-from datetime import datetime
 import time
 import asyncio
-from concurrent import futures
+from concurrent.futures import Executor
 from phasortoolbox.message import Command
-from phasortoolbox import Parser, PDC, DeviceControl
-import uvloop
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+from phasortoolbox import Parser
+
+"""A synchrphaor protocol connection clinet.
+
+Connects to any devices that follow IEEE Std C37.118.2-2011, send
+commands, and receiving data.
+According to IEEE Std C37.118.2-2011 'The device providing data is the
+server and the device receiving data is the client.'
+
+Examples:
+
+    F.2.1 TCP-only method:
+    "The client needs to know only the server address and port. "
+    pmu_client = Client(remote_ip='130.127.88.170',remote_port=4722, id_code=16, mode='TCP')
+
+    F.2.2 UDP-only method:
+    "The client must know the server address and port number. The server can respond to the client port or a different port by prior arrangement."
+    local_port is optional if not configured on the PMU.
+    pmu_client = Client(remote_ip='130.127.88.160',remote_port=41180, local_port=4713 , id_code=15, mode='UDP')
+
+    F.2.3 TCP/UDP method:
+    "The server address and port must be known to the client, and the client port UDP port must be known to the server (PMU)."
+    pmu_client = Client(remote_ip='130.127.88.159',remote_port=4722, local_port=4713 , id_code=14, mode='TCP_UDP')
+
+    
+    F.2.4 Spontaneous data transmission method:
+    "The drawback to this method is lack of ability to turn the data stream on and off, ... "
+    remote_ip is optional.
+    pmu_client = Client(remote_ip='130.127.88.160',local_port=4713, id_code=15, mode='UDP_S')
+    pmu_client.run()
+"""
 
 
-class Client(object):
-    """A synchrphaor protocol connection clinet.
-
-    Connects to any devices that follow IEEE Std C37.118.2-2011, send
-    commands, and receiving data.
-    According to IEEE Std C37.118.2-2011 'The device providing data is the
-    server and the device receiving data is the client.'
-
-    Examples:
-
-        # To quickly test a remote host:
-        my_pmu = Client(SERVER_IP='10.0.0.1',
-                  SERVER_TCP_PORT=4712, IDCODE=1)
-        my_pmu.test()
-
-    For most of the times, there is no need to directly access any methods in
-    this module after initiate. Use the phasortoolbox.DeviceControl() to
-    control this device instead.
-    """
-
-    def __init__(
-        self,
-        SERVER_IP='10.0.0.1',
-        SERVER_TCP_PORT=4712,
-        CLIENT_TCP_PORT='AUTO',
-        SERVER_UDP_PORT=4713,
-        CLIENT_UDP_PORT='AUTO',
-        MODE='TCP',
-        IDCODE=1,
-        loop: asyncio.AbstractEventLoop() = None,
-        executor: futures.Executor() = None,
-        parser: Parser() = None,
-        count=0
-    ):
-        self.IDCODE = IDCODE
-        self.SERVER_IP = SERVER_IP
-        self.SERVER_TCP_PORT = SERVER_TCP_PORT
-        self.CLIENT_TCP_PORT = CLIENT_TCP_PORT
-        self.SERVER_UDP_PORT = SERVER_UDP_PORT
-        self.CLIENT_UDP_PORT = CLIENT_UDP_PORT
-        self.MODE = MODE
+class Client():
+    def __init__(self, id_code, remote_ip=None, remote_port=None, local_port=None, mode='TCP', callback=lambda msg: None, filter_key={'data'}, loop=asyncio.get_event_loop(), executor=None):
+        self.remote_ip = remote_ip  # ('10.0.0.1', 4712)
+        self.remote_port = remote_port
+        self.local_port = local_port  # ('0.0.0.0', 4712)
+        self.id_code = id_code
+        self.callback = callback
+        self.mode = mode
+        self.loop = loop
         self.executor = executor
-        if loop:
-            self.loop = loop
-        else:
-            self.loop = asyncio.get_event_loop()
-        if parser:
-            self.parser = parser
-        else:
-            self.parser = Parser()
-        self._output_list = []
-        self.count = count
-        if self.MODE == 'TCP':
-            async def connect():
-                self._count = count
-                print('Connecting to:', self.SERVER_IP, '...')
-                await self.loop.create_connection(
-                    lambda: self._TCP(self),
-                    host=self.SERVER_IP, port=self.SERVER_TCP_PORT)
+        self.filter_key = filter_key
+        self._parser = Parser()
+        self._transport = None
+        self._protocol = None
 
-            async def close():
-                if self.cmd_transport:
-                    self.cmd_transport.close()
-        self.connect = connect
-        self.close = close
-
-    async def send_cmd(self, CMD):
-        if self.cmd_transport:
-            self.cmd_transport.write(Command(self.IDCODE, CMD))
-            print('Command \"' + CMD + '\" sent to', self.SERVER_IP)
-
-    async def run(self):
-        await self.connect()
-        await self.send_cmd('off')
-        await self.send_cmd('cfg2')
-        await self.send_cmd('on')
-
-    async def handle_message(self, data):
+    def callback(self, data):
         """
-        This function will only be called if self.client._output_list
-        is not None
-        when connected.
+        Impliment your function
         """
-        _arrtime = time.time()
-        msgs = self.parser.parse(data)
-        _parse_time = time.time() - _arrtime
+        pass
+
+    def run(self, c=0):
+        _old_loop, self.loop = self.loop, asyncio.new_event_loop()
+        self.loop.create_task(self.cor_run(c))
+        try:
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.loop.run_until_complete(self.close())
+        self.loop.close()
+        self.loop = _old_loop
+
+    async def cor_run(self, c=0):
+        self._receive_counter = 0
+        self.c = c
+        if self.mode == 'TCP':
+            print('Connecting to: (\'{}\', {}) ...'.format(self.remote_ip, self.remote_port))
+            self._transport, self._protocol = await self.loop.create_connection(lambda: _TCPOnly(self.id_code, self.receive_data), self.remote_ip, self.remote_port)
+
+        elif self.mode == 'UDP':
+            self._transport, self._protocol = await self.loop.create_datagram_endpoint(lambda: _UDPOnly(self.id_code, self.receive_data), local_addr=('0.0.0.0', self.local_port) if self.local_port else None, remote_addr=(self.remote_ip, self.remote_port))
+
+        elif self.mode == 'TCP_UDP':
+            print('Connecting to: (\'{}\', {}) ...'.format(self.remote_ip, self.remote_port))
+            await self.loop.create_datagram_endpoint(
+                lambda: _UDP_Spontaneous(self.remote_ip, None, self.receive_data),
+                local_addr=('0.0.0.0', self.local_port))
+            self._transport, self._protocol = await self.loop.create_connection(lambda: _TCPOnly(self.id_code, self.receive_data),
+                              self.remote_ip, self.remote_port)
+
+        elif self.mode == 'UDP_S':
+            print('Waiting for configuration packet ...')
+            self._transport, self._protocol = await self.loop.create_datagram_endpoint(
+                lambda: _UDP_Spontaneous(self.remote_ip, self.remote_port, self.receive_data),
+                local_addr=('0.0.0.0', self.local_port))  #,
+                              #remote_addr=(self.IP, None))
+
+    def receive_data(self, data):
+        arr_time = time.time()
+        msgs = self._parser.parse(data)
         for msg in msgs:
-            msg._arrtime = _arrtime
-            msg._parse_time = _parse_time
-        for _devices in self._output_list:
-            for msg in msgs:
-                await _devices._input_queue.put(msg)
-
-    async def clean_up(self):
-        await self.send_cmd('off')
-        await self.close()
-
-    class _TCP(asyncio.Protocol):
-        def __init__(self, client):
-            self.client = client
-            self.transport = None
-
-        def connection_made(self, transport):
-            self.transport = transport
-            self.client.cmd_transport = self.transport
-            print('Connected to:', self.transport.get_extra_info('peername'))
-            if not self.client._output_list:
-                print('No output defined. Received data will be dropped.')
-
-        def data_received(self, data):
-            asyncio.ensure_future(self.client.handle_message(data))
-            if self.client._count == 0:
+            if msg.sync.frame_type.name not in self.filter_key:
+                print('"{}" message received from: {}'.format(msg.sync.frame_type.name, self._transport.get_extra_info('peername')))
+                continue
+            msg.arr_time = arr_time
+            msg.parse_time = time.time() - arr_time
+            self.callback(msg)
+            self._receive_counter += 1
+            #self.loop.run_in_executor(self.executor, self.callback, msg)
+            if self.c == 0:
                 return
-            elif self.client._count > 1:
-                self.client._count -= 1
+            elif self.c > 1:
+                self.c -= 1
                 return
-            elif self.client._count == 1:
-                asyncio.ensure_future(self.client.clean_up())
+            elif self.c == 1:
+                self.loop.stop()
 
-        def connection_lost(self, exc):
-            print('Connection ', self.transport.get_extra_info(
-                'peername'), 'closed.')
+    def check_receive_counter(self):
+        if self._receive_counter == 0:
+            print('No packet received. Are you using the correct IP, port, and id_code?')
+        else:
+            print(self._receive_counter, 'messages received.')
 
-    def test(self, v=True, sample=True, count=0):
-        class _mem(object):
-            def __init__(self, v=True, sample=True):
-                self._buf = []
-                self.v = v
-                self.sample = sample
+    async def close(self):
+        if self._transport:
+            if not self._transport.is_closing():
+                if self.mode != 'UDP_S':
+                    self._protocol.close()
+                    self._transport.close()
+        self.check_receive_counter()
 
-            def add_msg(self, buffer_msgs):
-                if self.sample:
-                    self._buf.append(buffer_msgs)
-                if self.v:
-                    now = time.time()
-                    time_tag = datetime.utcfromtimestamp(
-                        buffer_msgs[-1][0].time).strftime(
-                        "UTC: %m-%d-%Y %H:%M:%S.%f")
-                    freqlist = ' '.join("%.4f" % (
-                        pmu_d.freq) + 'Hz ' if my_msg is not None else
-                        'No Data' for
-                        my_msg in buffer_msgs[-1] for
-                        pmu_d in my_msg.data.pmu_data)
-                    sys.stdout.write(
-                        "Network delay:%.4fs Local delay:%.4fs " % (
-                            now - buffer_msgs[-1][0].time,
-                            now - buffer_msgs[-1][0]._arrtime
-                        ) + time_tag + " " + freqlist + "\r"
-                    )
-                    sys.stdout.flush()
-        _tm = _mem(v=v, sample=sample)
-        _my_pdc = PDC()
-        _my_pdc.count = count
-        _my_pdc.CALLBACK = _tm.add_msg
-        _my_devices = DeviceControl()
-        _my_devices.connection_list = [[[self], [_my_pdc]]]
-        _my_devices.device_list = [self, _my_pdc]
-        _my_devices.run()
-        if sample:
-            return _tm._buf
+
+class _TCPOnly(asyncio.Protocol):
+    def __init__(self, id_code, callback=lambda data: None):
+        self.id_code = id_code
+        self.data_received = callback
+
+    def connection_made(self, transport):
+        self.transport = transport
+        self.peername = transport.get_extra_info('peername')
+        print('Connected to:', self.peername)
+        self.transport.write(Command(self.id_code, 'off'))
+        print('Command "data off" sent to:', self.peername)
+        self.transport.write(Command(self.id_code, 'cfg2'))
+        print('Command "send configuration2" sent to:', self.peername)
+        self.transport.write(Command(self.id_code, 'on'))
+        print('Command "data on" sent to:', self.peername)
+
+    def close(self):
+        self.transport.write(Command(self.id_code, 'off'))
+        print('Command "data off" sent to:', self.peername)
+
+    def connection_lost(self, exc):
+        print('Connection', self.peername, 'closed.')
+
+
+class _UDPOnly(asyncio.DatagramProtocol):
+    def __init__(self, id_code, callback=lambda data: None):
+        self.id_code = id_code
+        self.callback = callback
+
+    def datagram_received(self, data, addr):
+        self.callback(data)
+
+    def connection_made(self, transport):
+        self.transport = transport
+        self.peername = transport.get_extra_info('peername')
+        print('Connected to:', self.peername)
+        self.transport.sendto(Command(self.id_code, 'off'))
+        print('Command "data off" sent to:', self.peername)
+        self.transport.sendto(Command(self.id_code, 'cfg2'))
+        print('Command "send configuration2" sent to:', self.peername)
+        self.transport.sendto(Command(self.id_code, 'on'))
+        print('Command "data on" sent to:', self.peername)
+
+    def close(self):
+        self.transport.sendto(Command(self.id_code, 'off'))
+        print('Command "data off" sent to:', self.peername)
+
+    def connection_lost(self, exc):
+        print('Connection', self.peername, 'closed.')
+
+
+class _UDP_Spontaneous(asyncio.DatagramProtocol):
+    def __init__(self, remote_ip=None, remote_port=None,
+                 callback=lambda data: None):
+        self.remote_ip = remote_ip
+        self.remote_port = remote_port
+        self.callback = callback
+        self._pass_score = (self.remote_ip is not None) + (self.remote_port is not None)
+
+    def datagram_received(self, data, addr):
+        if (addr[0] == self.remote_ip) + (addr[1] == self.remote_port) == self._pass_score:
+            self.callback(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
