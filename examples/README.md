@@ -83,14 +83,39 @@ The show() method for the PhasorMessage shows every fields in the message
     .data.pmu_data[0].digital[0][2].name == 'Dig Channel 3   '
     .data.pmu_data[0].digital[0][2].normal_status == '0'
     .data.pmu_data[0].digital[0][2].value == '0'
-    .
-    .
-    .
+```
+.
+.
+.
+```python
+    .data.pmu_data[3].stat.pmu_trigger_detected.value == 0
+    .data.pmu_data[3].stat.trigger_reason.name == 'manual'
+    .data.pmu_data[3].stat.trigger_reason.value == 0
+    .data.pmu_data[3].stat.unlocked_time.name == 'sync_locked_or_unlocked_less_than_10_s_best_quality'
+    .data.pmu_data[3].stat.unlocked_time.value == 0
+    .fracsec.fraction_of_second == 0.04
+    .fracsec.leap_second_direction.name == 'add'
+    .fracsec.leap_second_direction.value == 0
+    .fracsec.leap_second_occurred == False
+    .fracsec.leap_second_pending == False
+    .fracsec.raw_fraction_of_second == 40000
+    .fracsec.reserved == False
+    .fracsec.time_quality.name == 'normal_operation_clock_locked_to_utc_traceable_source'
+    .fracsec.time_quality.value == 0
+    .framesize == 456
+    .idcode == 60
+    .soc == 1217607006
+    .sync.frame_type.name == 'data'
+    .sync.frame_type.value == 0
+    .sync.magic == b'\xaa'
+    .sync.reserved == False
+    .sync.version_number.name == 'c_37_118_2005'
+    .sync.version_number.value == 1
 ```
 
 ```python
->>> msgs[199].data.pmu_data[0].digital[0][2].value
-'0'
+>>> msgs[199].fracsec.time_quality.name
+'normal_operation_clock_locked_to_utc_traceable_source'
 ```
 
 
