@@ -95,6 +95,7 @@ The show() method for the PhasorMessage shows every fields in the message
 
 
 ### Connect remote PMUs:
+The following examples also show how to retrieve data from remove device and integrate your programs.
 
 There are four connection methods defined in C37.118.2-2011:
 
@@ -105,9 +106,11 @@ Example:
 >>> import logging
 >>> logging.basicConfig(level=logging.DEBUG)
 >>> from phasortoolbox import Client
+>>> buf = []
 >>> pmu_client1 = Client(remote_ip='10.0.0.1',remote_port=4712, idcode=1, mode='TCP')
->>> pmu_client1.callback = lambda msg: print(msg.data.pmu_data[0].freq)
+>>> pmu_client1.callback = lambda msg: buf.append(msg)
 >>> pmu_client1.run(100)
+>>> buf[0].show()
 ```
 F.2.2 UDP-only method:
 "The client must know the server address and port number. The server can respond to the client port or a different port by prior arrangement."
