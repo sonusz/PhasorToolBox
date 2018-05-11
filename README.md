@@ -4,7 +4,7 @@ The goal of PhasorToolBox is to provide a Synchrophasor Protocol ([IEEE C37.118.
 
 Tested on RedHat 7.2 with Python 3.6
 
-Please check example folder for examples.
+Please check [examples] folder for examples.
 
 ## Performance:
 
@@ -23,17 +23,21 @@ python3 parse_stream.py stream.bin
 ```
 
 
-### Update May 11, 2018
+### Update May 11, 2018, Version 0.3
 Supports all four connection methods (TCP only, UDP only, TCP/UDP mixed, and  UDP Spontaneous).
+
 Add PhasorMessage.show() method.
+
 Reconstructed Client and PDC modules.
+
 Removed uvloop.
+
 Bug fix.
 
 ### Update Mar 16, 2018
 Add examples and tutorials in the example folder. 
 
-### Update version 0.2 Jan 13, 2018
+### Update Jan 13, 2018, Version 0.2
 Add PcapParser(). 
 
 Now you can parse synchrophasor messages from a pcap file.
@@ -51,3 +55,4 @@ Configuration 3 message scale factor calculations.
 
 [IEEE C37.118.2-2011 Standard]: <http://ieeexplore.ieee.org/document/6111222/>
 [Kaitai Struct]: <https://github.com/kaitai-io/kaitai_struct>
+[examples]: <https://github.com/sonusz/PhasorToolBox/tree/master/examples>
