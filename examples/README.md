@@ -104,7 +104,9 @@ Example:
 ```python
 >>> import logging
 >>> logging.basicConfig(level=logging.DEBUG)
+>>> from phasortoolbox import Client
 >>> pmu_client1 = Client(remote_ip='10.0.0.1',remote_port=4712, idcode=1, mode='TCP')
+>>> pmu_client1.callback = lambda msg: print(msg.data.pmu_data[0].freq)
 >>> pmu_client1.run(100)
 ```
 F.2.2 UDP-only method:
@@ -114,7 +116,9 @@ Example:
 ```python
 >>> import logging
 >>> logging.basicConfig(level=logging.DEBUG)
+>>> from phasortoolbox import Client
 >>> pmu_client2 = Client(remote_ip='10.0.0.2',remote_port=4713, local_port=4713, idcode=2, mode='UDP')
+>>> pmu_client2.callback = lambda msg: print(msg.fracsec.time_quality.name)
 >>> pmu_client2.run(100)
 ```
 F.2.3 TCP/UDP method:
@@ -123,7 +127,9 @@ Example:
 ```python
 >>> import logging
 >>> logging.basicConfig(level=logging.DEBUG)
+>>> from phasortoolbox import Client
 >>> pmu_client3 = Client(remote_ip='10.0.0.3',remote_port=4712, local_port=4713 , idcode=3, mode='TCP_UDP')
+>>> pmu_client3.callback = lambda msg: print(msg.time)
 >>> pmu_client3.run(100)
 ```
     
@@ -133,7 +139,9 @@ remote_ip and remote_port is optional if not known.
 ```python
 >>> import logging
 >>> logging.basicConfig(level=logging.DEBUG)
+>>> from phasortoolbox import Client
 >>> pmu_client4 = Client(remote_ip='10.0.0.4',local_port=4713, idcode=4, mode='UDP_S')
+>>> pmu_client4.callback = lambda msg: print(msg.arr_time)
 >>> pmu_client4.run(100)
 ```
 
@@ -141,7 +149,9 @@ remote_ip and remote_port is optional if not known.
 ```python
 >>> from phasortoolbox import PDC
 >>> pdc = PDC(clients=[pmu_client1, pmu_client2, pmu_client3, pmu_client4])
+>>> pdc.callback = lambda synchrophasors: print(synchrophasors[-1].time, [synchrophasors[-1][i].data.pmu_data[0].freq for i in range(4)])
 >>> pdc.run(100)
 ```
 
 ### To do: More examples
+Check print_freq.py and print_freq2.py for some slightly more conplicated examples.
