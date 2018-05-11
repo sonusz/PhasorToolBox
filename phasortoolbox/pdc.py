@@ -1,204 +1,184 @@
 #!/usr/bin/env python3
 import time
 import bisect
-from collections import defaultdict, UserList
 import asyncio
-from concurrent import futures
-from phasortoolbox import Parser
-import uvloop
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+from collections import UserList, defaultdict
+from concurrent.futures import Executor, ThreadPoolExecutor
+from phasortoolbox import Client
+import logging
+
+LOG=logging.getLogger('phasortoolbox.pdc')
+
+
+class Synchrophasor(UserList):
+    """docstring for Synchrophasor"""
+    def __init__(self, list_, time_tag, arr_time, perf_counter):
+        super(Synchrophasor, self).__init__(list_)
+        self.time = time_tag
+        self.arr_time = arr_time
+        self.perf_counter = perf_counter
 
 
 class PDC(object):
     """docstring for PDC
 
 
-    Example:
-    my_pdc = PDC()
+Example:
+my_pdc = PDC()
 
-    This class aligns in coming synchrophasor messages using time tags.
+This class aligns in coming synchrophasor messages using time tags.
 
 
     """
+    def __init__(self, callback=lambda buf_sync: None, clients=[], time_out=0.1, steps=1, return_on_time_out=False, process_pool=False):
+        self.callback = callback
+        self.clients = clients
+        self.receive_counter = 0
+        self.time_out = time_out
+        self.steps = steps
+        self.return_on_time_out = return_on_time_out
+        self.process_pool = process_pool
 
-    def __init__(
-        self,
-        CALLBACK=None,  # Function which will be executed while data available, defined by user
-        BUF_SIZE=1,  # Number of historical data returned to CALLBACK
-        returnNone=False,
-        # returnNone determines if partially received record should be discarded when timeout. Record will be discarded on False; None will be used as place holder and return partially received record on True.
-        WAIT_TIME=0.1,  # The max time to wait for each time tag, will return None if returnNone is True
-        count=0,  # Stop after received this number of time tags.
-        FILTER={'data'},  # Type of PMU message will be processed
-        loop: asyncio.AbstractEventLoop()=None,
-        executor: futures.Executor()=None,
-        step_time=0.01  # The time to wait for asyncio when no data coming in
-        # Count of data send before stop. 0 for send forever.
-    ):
-        self.WAIT_TIME = WAIT_TIME
-        self.FILTER = FILTER
-        self.BUF_SIZE = BUF_SIZE
-        self.step_time = step_time
-        self.buf_time_out = self.BUF_SIZE * self.WAIT_TIME * 10
-        self._input_list = []
-        self._output_list = []
-        self._input_queue = asyncio.Queue()
-        if loop:
-            self.loop = loop
-        else:
-            self.loop = asyncio.get_event_loop()
-        self.executor = executor
-        if CALLBACK:
-            self.CALLBACK = CALLBACK
-        self.returnNone = returnNone
-        self.count = count
-        
-    async def run(self, count=None):
-        if not self._input_list:
-            print('No input defined.')
-            return
-        self._idcode_list = []
-        for _input in self._input_list:
-            self._idcode_list.append(_input.IDCODE)
-        if not callable(self.CALLBACK):
-            raise TypeError("Input must be a function, "
-                            "not {!r}".format(type(self.CALLBACK)))
-        self._buf = {}
-        self._buf_index = []
-        if not count:
-            count = self.count
-        while True:
-            try:
-                ###############################################################
-                """The following chunk of code checks which data can be send
-                and generate a list of ordered time tags.
-                The returned data should be a list of ordered and aligned
-                record. The first record in the returned list should never
-                been sent before. The following record needs to be valid or
-                has been send before.
-                A flag (_buf[time_tag]['sent']) is used to indicate if the
-                record has been sent before. True will be assigned if the
-                record has been sent before (_buf[time_tag]['sent']==True).
-                 """
-                _temp_send_list = []
-                _time_out_by = time.time() - self.WAIT_TIME
-                # This is a time point in the past, time tags earlier/smaller
-                # than this point will be sent or discarded.
-                if len(self._buf_index) > 0:
-                    _newest_tag = self._buf_index[-1]
-                    if (self._buf[_newest_tag]['sent'] is not True
-                        # The record with newest time tag haven't been sent
-                        and (len(self._buf[_newest_tag]) - 2 ==
-                            len(self._input_list)
-                            # Data ready to send
-                            or (self.returnNone
-                                and self._buf[_newest_tag]['_arrtime'] <
-                                _time_out_by
-                                )  # Data time out
-                            )
-                        ):
-                        _temp_send_list.append(_newest_tag)
-                        for time_tag in reversed(self._buf_index[:-1]):
-                            if len(_temp_send_list) == self.BUF_SIZE:
-                                # Exit this loop when get enough data
-                                break
-                            if (self._buf[time_tag]['sent'] is True
-                                # The record have been sent before
-                                or len(self._buf[time_tag]) - 2 ==
-                                            len(self._input_list)
-                                # Data ready to send
-                                or self.returnNone
-                                # Data time out allow to send
-                                ):
-                                _temp_send_list.append(time_tag)
-
-                ###############################################################
-                """ The following chunk of code prepare buffer_msgs for user's
-                function. If multiple time tags are returned, the time tags
-                are ordered in the receiving order (The newest received will
-                be the last one in the returned list).
-                """
-                if len(_temp_send_list) == self.BUF_SIZE:
-                    # Will not do anything if not enough data to send
-                    # Prepare send msgs and call user defined function
-                    buffer_msgs = UserList([
-                        [
-                            self._buf[time_tag][idcode] for idcode in
-                            self._idcode_list
-                        ]
-                        for time_tag in reversed(_temp_send_list)
-                    ])
-                    buffer_msgs.time_tags = list(reversed(_temp_send_list))
-                    buffer_msgs.dict = {buffer_msgs.time_tags[i]:buffer_msgs.data[i] for i in range(len(buffer_msgs))}
-                    # self.loop.run_in_executor(
-                    #    self.executor, self.CALLBACK, buffer_msgs)
-                    _usr_buffer_msgs = self.CALLBACK(
-                        buffer_msgs)  # Call user's function
-                    if _usr_buffer_msgs:
-                        for _devices in self._output_list:
-                            await _devices._input_queue.put(_usr_buffer_msgs)
-                    if count == 0:
-                        pass
-                    elif count > 1:
-                        count -= 1
-                    elif count == 1:
-                        break
-                    for time_tag in _temp_send_list:
-                        self._buf[time_tag]['sent'] = True
-                ###############################################################
-                # Remove time out data from _buf
-                _del_list = []
-                if len(_temp_send_list) == self.BUF_SIZE:
-                    # Remove all data until the last one sent
-                    for time_tag in self._buf_index:
-                        if time_tag < _temp_send_list[-1]:
-                            _del_list.append(time_tag)
-                        else:
-                            break
-                else:
-                    # Remove all data until buffer time out
-                    _time_out_by = time.time() - self.buf_time_out
-                    for time_tag in self._buf_index:
-                        if self._buf[time_tag]['_arrtime'] < _time_out_by:
-                            _del_list.append(time_tag)
-                            continue
-                        else:
-                            break
-                for time_tag in _del_list:
-                    del self._buf[time_tag]
-                    self._buf_index.remove(time_tag)
-                ###############################################################
-                """Get all data from queue
-                If user's CALLBACK function is too slow, queue size will keep
-                increase. Get all data from queue if queue have pending
-                data. If user's CALLBACK function is fast enough, then wait
-                until item available in queue.
-                """
-                if self._input_queue.qsize() >= 1:
-                    msgs = []
-                    for i in range(self._input_queue.qsize()):
-                        msgs.append(self._input_queue.get_nowait())
-                else:
-                    msgs = [None]
-                    msgs[0] = await asyncio.wait_for(
-                        self._input_queue.get(), self.step_time)
-                for msg in msgs:
-                    if msg.sync.frame_type.name not in self.FILTER:
-                        continue
-                    try:
-                        self._buf[msg.time][msg.idcode] = msg
-                    except KeyError:    # New time tag
-                        self._buf[msg.time] = defaultdict(lambda: None)
-                        self._buf[msg.time][msg.idcode] = msg
-                        self._buf[msg.time]['_arrtime'] = msg._arrtime
-                        bisect.insort(self._buf_index, msg.time)
-                ###############################################################
-            except asyncio.TimeoutError:
-                continue
-            except asyncio.CancelledError:
-                break
-        self.loop.stop()
-
-    async def clean_up(self):
+    def callback(self, buf_sync):
+        """
+        Implement your function
+        """
         pass
 
+    def run(self, c=0, loop=None, executor=None):
+        self.set_loop(loop, executor)
+        self.loop.create_task(self.coro_run(c))
+        try:
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.loop.run_until_complete(self.coro_close())
+            self.checkreceive_counter()
+        self.loop.close()
+
+
+    async def coro_run(self, c=0):
+        self.receive_counter = 0
+        self.c = c
+        idcode_list = [client.idcode for client in self.clients]
+        if len(idcode_list) > len(set(idcode_list)):
+            raise Exception('Duplicate id_code found. C37.118.2 standard does not support duplicate id_code. idcode list:',idcode_list)
+            
+        self._buf = _Buffer(idcode_list, self._synchrophasors_created, self.time_out, self.steps, self.return_on_time_out)
+        self._buf_task = asyncio.ensure_future(self._buf.coro_check_timeout())
+        for client in self.clients:
+            client._add_pdc(id(self), self._buf.add_msg, self.loop, self.executor)
+            asyncio.ensure_future(client.coro_run())
+
+    async def coro_close(self):
+        if self._buf_task :
+            self._buf_task.cancel()
+        for client in self.clients:
+            await client.coro_close()
+            client._remove_pdc(id(self))
+
+    def checkreceive_counter(self):
+        LOG.warning(str(self.receive_counter)+' synchrophasors created.')
+        for client in self.clients:
+            client.checkreceive_counter()
+
+    def _synchrophasors_created(self, synchrophasors):
+        self.receive_counter += 1
+        if self.process_pool:
+            future = self.executor.submit(self.callback, synchrophasors)
+            if future.exception():
+                raise future.exception()
+        else:
+            self.callback(synchrophasors)
+        del(synchrophasors)
+        if self.c == 0:
+            return
+        elif self.c > 1:
+            self.c -= 1
+            return
+        elif self.c == 1:
+            self.loop.stop()
+
+    def set_loop(self, loop=None, executor=None):
+        self.loop = loop if loop is not None else asyncio.new_event_loop()
+        self.executor = executor if executor is not None else ThreadPoolExecutor()
+
+
+
+class _Buffer(object):
+    def __init__(self, idcode_list, callback, time_out, steps, return_on_time_out):
+        self.idcode_list = idcode_list
+        self.callback = callback
+        self.time_out = time_out
+        self.steps = steps
+        self.return_on_time_out = return_on_time_out
+        self._buffer_time_out = 0.2 * (steps + 1)
+        self._min_sleep = time_out/100
+        self._data = defaultdict(lambda: defaultdict(lambda: None))
+        self._arr_times = defaultdict(lambda: 0)
+        self._perf_counter = defaultdict(lambda: 0)
+        self._return_time_outs = {}
+        self._buffer_time_outs = {}
+        self._sorted_time_tags = []
+        self._ready_to_send = []
+        self._ready_to_send_s = set()
+        self._last_sent_time_tag = None
+
+    def add_msg(self, msg):
+        if msg.time not in self._arr_times:
+            bisect.insort(self._sorted_time_tags, msg.time)
+        self._data[msg.time][msg.idcode] = msg
+        self._arr_times[msg.time] = max(msg.arr_time,self._arr_times[msg.time])
+        self._perf_counter[msg.time] = max(msg.perf_counter,self._perf_counter[msg.time])
+        self._return_time_outs[msg.time] = self._arr_times[msg.time] + self.time_out
+        self._buffer_time_outs[msg.time] = self._arr_times[msg.time] + self._buffer_time_out
+        self._check_completeness(msg.time)
+
+    def _check_completeness(self, time_tag):
+        if len(self._data[time_tag]) == len(self.idcode_list) and time_tag not in self._ready_to_send_s:
+            bisect.insort(self._ready_to_send, time_tag)
+            self._ready_to_send_s.add(time_tag)
+            self._send_synchrophasors_if_ready()
+
+    def _send_synchrophasors_if_ready(self):
+        if len(self._ready_to_send) >= self.steps:
+            if self._ready_to_send[-1] != self._last_sent_time_tag:
+                synchrophasors = []
+                for i in reversed(range(1, self.steps+1)):
+                    synchrophasors.append(Synchrophasor([self._data[self._ready_to_send[-i]][idcode] for idcode in self.idcode_list], self._ready_to_send[-i], self._arr_times[self._ready_to_send[-i]], self._perf_counter[self._ready_to_send[-i]]))
+                self._last_sent_time_tag = self._ready_to_send[-1]
+                self.callback(synchrophasors)
+        
+    def callback(self, synchrophasors):
+        pass
+
+    async def coro_check_timeout(self):
+        while True:
+            try:
+                await asyncio.sleep(self._min_sleep)
+                _now = time.time()
+                if self.return_on_time_out:
+                    for time_tag in self._sorted_time_tags:
+                        if _now >= self._return_time_outs[time_tag] and time_tag not in self._ready_to_send_s:
+                            bisect.insort(self._ready_to_send, time_tag)
+                            self._ready_to_send_s.add(time_tag)
+                    self._send_synchrophasors_if_ready()
+                _del_tags = []
+                for time_tag in self._sorted_time_tags:
+                    if _now > self._buffer_time_outs[time_tag]:
+                        _del_tags.append(time_tag)
+                    else:
+                        break
+                for time_tag in _del_tags:
+                    del(self._data[time_tag])
+                    del(self._arr_times[time_tag])
+                    del(self._perf_counter[time_tag])
+                    del(self._return_time_outs[time_tag])
+                    del(self._buffer_time_outs[time_tag])
+                    del(self._sorted_time_tags[self._sorted_time_tags.index(time_tag)])
+                    if time_tag in self._ready_to_send_s:
+                        del(self._ready_to_send[self._ready_to_send.index(time_tag)])
+                        self._ready_to_send_s.remove(time_tag)
+            except asyncio.CancelledError:
+                break

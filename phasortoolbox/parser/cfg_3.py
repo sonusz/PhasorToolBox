@@ -122,8 +122,8 @@ class Cfg3(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                self.normal_status = self._io.read_bits_int(16)
-                self.current_valid_inputs = self._io.read_bits_int(16)
+                self.normal_status = "{0:016b}".format(self._io.read_bits_int(16))
+                self.current_valid_inputs = "{0:016b}".format(self._io.read_bits_int(16))
 
 
         class Fnom(KaitaiStruct):

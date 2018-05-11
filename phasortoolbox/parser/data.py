@@ -4,6 +4,7 @@ import array
 import struct
 import zlib
 from enum import Enum
+from collections import UserList
 
 import cmath
 from pkg_resources import parse_version
@@ -50,6 +51,7 @@ class Data(KaitaiStruct):
             self.freq = self._root.PmuData.Freq(
                 self._io, self, self._root).freq.freq
             self.dfreq = self._root.PmuData.Dfreq(self._io, self, self._root).dfreq.dfreq
+
             self.analog = [None] * (self._station.annmr)
             for i in range(self._station.annmr):
                 self.analog[i] = self._root.PmuData.Analog(
@@ -57,7 +59,23 @@ class Data(KaitaiStruct):
 
             self.digital = [None] * (self._station.dgnmr)
             for i in range(self._station.dgnmr):
-                self.digital[i] = self._io.read_bits_int(16)
+                _d = "{0:016b}".format(self._io.read_bits_int(16))
+                self.digital[i] = [None] * 16
+                for j in range(16):
+                    self.digital[i][j] = self.Flag(
+                        self._station.digunit[i][j].name,
+                        self._station.digunit[i][j].normal_status,
+                        self._station.digunit[i][j].current_valid_input,
+                        _d[j]
+                        )
+
+        class Flag():
+            def __init__(self, name, normal_status, current_valid_inputs, value):
+                self.name = name
+                self.normal_status = normal_status
+                self.current_valid_inputs = current_valid_inputs
+                self.value = value
+
         class Freq(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
                 self._io = _io
@@ -232,11 +250,17 @@ class Data(KaitaiStruct):
 
         class Phasors(KaitaiStruct):
             def __repr__(self):
-                    _repr_list = []
-                    for item in ["real", "imaginary", "magnitude", "angle"]:
-                        _r = getattr(self, item)
-                        _repr_list.append("=".join((item, _r.__repr__())))
-                    return "<Phasors |"+", ".join(_repr_list)+">"
+                _repr_list = []
+                for item in ["name", "real", "imaginary", "magnitude", "angle"]:
+                    _r = getattr(self, item)
+                    _repr_list.append("=".join((item, _r.__repr__())))
+                return "<Phasors |"+", ".join(_repr_list)+">"
+
+            def show(self, parent_path):
+                for item in ["name", "real", "imaginary", "magnitude", "angle"]:
+                    _r = getattr(self, item)
+                    print(parent_path+'.'+item+" == "+_r.__repr__())
+
 
             @property
             def real(self):
@@ -259,6 +283,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
+                self.name = self._phunit.name
                 _on = self._parent._station.format.phasors_data_type
                 if _on == 'int':
                     self.phasors = self._root.PmuData.Phasors.Int(
@@ -430,6 +455,7 @@ class Data(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
+                self.name = self._anunit.name
                 _on = self._parent._station.format.analogs_data_type
                 if _on == 'int':
                     self.analog = self._root.PmuData.Analog.Int(

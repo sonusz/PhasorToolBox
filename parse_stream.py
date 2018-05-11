@@ -17,9 +17,9 @@ if __name__ == '__main__':
         binary_data = f.read()
 
     print('Performance test...')
-    start = time.time()
+    start = time.perf_counter()
     measurement_data = parse_test(binary_data)
-    result = time.time() - start
+    result = time.perf_counter() - start
     print('\n',len(measurement_data),'packets parsed in',result,'seconds')
     print('Time takes per packet:',\
         result / len(measurement_data))

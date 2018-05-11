@@ -29,7 +29,6 @@ def _kaitai_repr(self):
                 _repr_list.append(item)
     return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
 
-
 def _enum_repr(self):
     _repr_list = []
     for item in ("name", "value"):
@@ -37,12 +36,36 @@ def _enum_repr(self):
         _repr_list.append("=".join((item, _r.__repr__())))
     return "<" + self.__class__.__name__[:-4] + " |" + ", ".join(_repr_list) + ">"
 
+def _kaitai_show(self, parent_path='    '):
+    if type(self) in (int, float, str, bytes, bool):
+        print(" == ".join((parent_path, self.__repr__())))
+    elif type(self) == list:
+        for i, item in enumerate(self):
+            try:
+                item.show('{}[{}]'.format(parent_path,i))
+            except:
+                _kaitai_show(item,'{}[{}]'.format(parent_path,i))
+    else:
+        for item in sorted(vars(self)):
+            if not item.startswith('_'):
+                _r = getattr(self, item)
+                try:
+                    _r.show(parent_path+'.'+item)
+                except:
+                    _kaitai_show(_r,parent_path+'.'+item)
 
+def _enum_show(self, parent_path='    '):
+    for item in ("name", "value"):
+        _r = getattr(self, item)
+        print(parent_path+'.'+item+' == '+_r.__repr__())
+
+
+KaitaiStruct.__repr__ = _kaitai_repr
+Enum.__repr__ = _enum_repr
+KaitaiStruct.show = _kaitai_show
+Enum.show = _enum_show
+#msg.show()
 class PhasorMessage(KaitaiStruct):
-
-    KaitaiStruct.__repr__ = _kaitai_repr
-
-    Enum.__repr__ = _enum_repr
 
     def __repr__(self):
         _repr_list = [
@@ -56,13 +79,11 @@ class PhasorMessage(KaitaiStruct):
                     _repr_list.append(item)
         return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
 
-    def show(self):
-        _repr_list = []
-        for item in vars(self):
-            if not item.startswith('_'):
-                _r = getattr(self, item)
-                _repr_list.append("=".join((item, _r.__repr__())))
-        return "<" + self.__class__.__name__ + "|" + ", ".join(_repr_list) + ">"
+    def show(self, parent_path='    '):
+        if self.fracsec.fraction_of_second:
+            print(parent_path+'.time == '+str(self.time))
+        _kaitai_show(self, parent_path)
+
 
     def __init__(self, _io, _parent=None, _root=None, _mini_cfgs=None):
         self._io = _io
@@ -143,6 +164,12 @@ class PhasorMessage(KaitaiStruct):
                     else:
                         _repr_list.append(item)
             return "<" + self.__class__.__name__ + " |" + ", ".join(_repr_list) + ">"
+
+        def show(self, parent_path):
+            if self.fraction_of_second:
+                print(parent_path+'.fraction_of_second == ' + str(self.fraction_of_second))
+            _kaitai_show(self, parent_path)
+
 
         class LeapSecondDirectionEnum(Enum):
             add = 0

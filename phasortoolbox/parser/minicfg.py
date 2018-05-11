@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from collections import defaultdict
+from collections import defaultdict, UserList
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import PhasorMessage
 
@@ -34,19 +34,20 @@ class MiniCfg(object):
     class Station(object):
         def __init__(self, _station):
             self._station = _station
+            self.stn = self._station.stn.name
             self.format = self.Format(self._station.format)
             self.phnmr = self._station.phnmr
             self.annmr = self._station.annmr
             self.dgnmr = self._station.dgnmr
             self.phunit = [None] * self.phnmr
             for i in range(self.phnmr):
-                self.phunit[i] = self.Phunit(self._station.phunit[i])
+                self.phunit[i] = self.Phunit(self._station.phunit[i], self._station.chnam.phasor_names[i].name)
             self.anunit = [None] * self.annmr
             for i in range(self.annmr):
-                self.anunit[i] = self.Anunit(self._station.anunit[i])
+                self.anunit[i] = self.Anunit(self._station.anunit[i], self._station.chnam.analog_names[i].name)
             self.digunit = [None] * self.dgnmr
             for i in range(self.dgnmr):
-                self.digunit[i] = self.Digunit(self._station.digunit[i])
+                self.digunit[i] = self.Digunit(self._station.digunit[i], self._station.chnam.digital_status_labels[i*16: (i+1)*16])
             self.fnom = self._station.fnom
 
         class Format(object):
@@ -59,18 +60,31 @@ class MiniCfg(object):
                 self.rectangular_or_polar = self._format.rectangular_or_polar.name[:]
 
         class Phunit(object):
-            def __init__(self, _phunit):
+            def __init__(self, _phunit, name):
                 self._phunit = _phunit
                 self.conversion_factor = self._phunit.conversion_factor
+                self.name = name
 
         class Anunit(object):
-            def __init__(self, _anunit):
+            def __init__(self, _anunit, name):
                 self._anunit = _anunit
-                x = self._anunit.raw_conversion_factor
-                self.conversion_factor = x if x <= 8388607 else x - 16777215
+                self.conversion_factor = self._anunit.conversion_factor
+                self.name = name
 
-        class Digunit(object):
-            def __init__(self, _digunit):
+        class Digunit(UserList):
+            def __init__(self, _digunit, names):
                 self._digunit = _digunit
-                self.normal_status = self._digunit.normal_status
-                self.current_valid_inputs = self._digunit.current_valid_inputs
+                self.data = [None] * 16
+                for i in range(16):
+                    self.data[i] = self.Flag(
+                        names[i],
+                        self._digunit.normal_status[i],
+                        self._digunit.current_valid_inputs[i]
+                        )
+
+            class Flag(object):
+                def __init__(self, name, normal_status, current_valid_input):
+                    self.name = name.name
+                    self.normal_status = normal_status
+                    self.current_valid_input = current_valid_input
+

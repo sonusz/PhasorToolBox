@@ -97,6 +97,14 @@ class Cfg2(KaitaiStruct):
                 self.analog_input = self._io.read_u1()
                 self.raw_conversion_factor = self._io.read_bits_int(24)
 
+            @property
+            def conversion_factor(self):
+                if hasattr(self, '_m_conversion_factor'):
+                    return self._m_conversion_factor if hasattr(self, '_m_conversion_factor') else None
+
+                self._m_conversion_factor = (self.raw_conversion_factor if self.raw_conversion_factor <= 8388607 else self.raw_conversion_factorif - 16777215)
+                return self._m_conversion_factor if hasattr(self, '_m_conversion_factor') else None
+
 
         class Chnam(KaitaiStruct):
             def __init__(self, _io, _parent=None, _root=None):
@@ -122,8 +130,8 @@ class Cfg2(KaitaiStruct):
                 self._io = _io
                 self._parent = _parent
                 self._root = _root if _root else self
-                self.normal_status = self._io.read_bits_int(16)
-                self.current_valid_inputs = self._io.read_bits_int(16)
+                self.normal_status = "{0:016b}".format(self._io.read_bits_int(16))
+                self.current_valid_inputs = "{0:016b}".format(self._io.read_bits_int(16))
 
 
         class Fnom(KaitaiStruct):

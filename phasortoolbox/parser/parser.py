@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-
 from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
 from .common import PhasorMessage
 from .minicfg import MiniCfgs
 from .pcap import Pcap
-
+import logging
+LOG=logging.getLogger('phasortoolbox.parser')
 
 class Parser(object):
     """ A Parser that parses synchrphasor messages defined by IEEE Std
@@ -43,9 +43,13 @@ class Parser(object):
         stream = []
         _io = KaitaiStream(BytesIO(raw_bytes))
         while not _io.is_eof():
-            message = PhasorMessage(_io, _mini_cfgs=self._mini_cfgs)
-            if type(message.data) != type(b''):
-                stream.append(message)
+            try:
+                message = PhasorMessage(_io, _mini_cfgs=self._mini_cfgs)
+                if type(message.data) != type(b''):
+                    stream.append(message)
+            except Exception as e:
+                LOG.debug("Parsing error.")
+                raise
         return stream
 
 
@@ -64,7 +68,7 @@ class PcapParser(object):
                 if _raw_data[0] == 170:  # _raw_data[0]
                     _r_stream += _raw_data
             except Exception as e:
-                #print(e)
+                LOG.debug("Pcap message parsing error.")
                 pass
 
         return self._parser.parse(_r_stream)

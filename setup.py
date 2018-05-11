@@ -2,11 +2,11 @@
 
 from setuptools import setup, find_packages
 
-requirements = ['kaitaistruct', 'uvloop']
+requirements = ['kaitaistruct']
 
 setup(
     name='phasortoolbox',
-    version='0.2',
+    version='0.3',
     description='Synchrophasor Protocol parser and tools ',
     author='Xingsi',
     url="https://github.com/sonusz/PhasorToolBox",

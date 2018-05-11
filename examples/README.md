@@ -29,149 +29,119 @@ First lets read some bytes from sample measurements. You could find the 'stream.
 ```python
 >>> import phasortoolbox
 >>> with open('stream.bin', "rb") as f:
-...    binary_data = f.read()  
+...    binary_data = f.read()
 ```
 
 Create a parser and parse the bytes:
 ```python
 >>> my_parser = phasortoolbox.Parser() # Create a parser.
->>> measurement_data = my_parser.parse(binary_data) # Parse It!
+>>> msgs = my_parser.parse(binary_data) # Parse It!
 ```
 
 Then you can access the data, e.g., the frequency value of station two stored in packet 200:
 ```python
->>> print('Frequency measurement in packet 200:', \
-...     measurement_data[199].data.pmu_data[1].freq,'Hz')
-Frequency measurement in packet 200: 65.536 Hz
-```
-
-
-#### Example 2, explore synchrophasor messages:
-Let's keep using the 'measurement_data' we got in thre previous step as the example.
-```python
->>> measurement_data[199]
+>>> msgs[199]
 <PhasorMessage |time=1217607006.04, sync, framesize=456, idcode=60, soc=1217607006, fracsec, data, chk=15394>
->>> measurement_data[199].data
+>>> msgs[199].time
+1217607006.04
+>>> msgs[199].data
+
+``` 
+
+
+#### Example 2.1, explore synchrophasor messages:
+Let's keep using the 'msgs' we got in thre previous step as the example.
+```python
+>>> msgs[199]
+<PhasorMessage |time=1217607006.04, sync, framesize=456, idcode=60, soc=1217607006, fracsec, data, chk=15394>
+>>> msgs[199].time
+1217607006.04
+>>> msgs[199].data
 <Data |pmu_data>
->>> measurement_data[199].data.pmu_data
+>>> msgs[199].data.pmu_data
 [<PmuData |stat, phasors, freq=50.0, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>]
->>> measurement_data[199].data.pmu_data[0].phasors
-[<Phasors |real=0.23024269249787369, imaginary=-100.06470703709206, magnitude=100.06497192382812, angle=-1.5684953927993774>, <Phasors |real=-86.67117694554175, imaginary=49.825644463626084, magnitude=99.9724349975586, angle=2.619847536087036>, <Phasors |real=86.54766181232355, imaginary=50.13071285849788, magnitude=100.01792907714844, angle=0.5250049233436584>]
->>> measurement_data[199].data.pmu_data[0].phasors[0].real
-0.23024269249787369
+>>> msgs[199].data.pmu_data
+[<PmuData |stat, phasors, freq=50.0, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>, <PmuData |stat, phasors, freq=65.536, dfreq=0.0, analog, digital>]
 ```
 
-
-### Interactive with remote PMUs:
-
-The PMUs used in the following examples has the following configurations:
-        
-PMU1: 
-IP: 10.0.0.1, IDCODE: 1, Running Mode: TCP, TCP PORT: 4712,
-PMU1: 
-IP: 10.0.0.2, IDCODE: 2, Running Mode: TCP, TCP PORT: 4712,
-
-#### Example 3, test a remote device connection and capture some sample packets:
-
-Assume you have a remote PMU use the IP over network communications running at "10.0.0.1" with "TCP-only" method, configured to listen to TCP 4712 port, IDCODE is 1 and accept connection from your IP.
-To run a quick test:
+#### Example 2.2, explore synchrophasor messages:
+The show() method for the PhasorMessage shows every fields in the message
 ```python
->>> from phasortoolbox import Client
->>> my_pmu = Client(SERVER_IP='10.0.0.1',
-....SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP')
->>> messages = my_pmu.test(count = 10)
+>>> msgs[199].show()
+    .time == 1217607006.04
+    .chk == 15394
+    .data.pmu_data[0].dfreq == 0.0
+    .data.pmu_data[0].digital[0][0].current_valid_inputs == '0'
+    .data.pmu_data[0].digital[0][0].name == 'Dig Channel 1   '
+    .data.pmu_data[0].digital[0][0].normal_status == '0'
+    .data.pmu_data[0].digital[0][0].value == '0'
+    .data.pmu_data[0].digital[0][1].current_valid_inputs == '0'
+    .data.pmu_data[0].digital[0][1].name == 'Dig Channel 2   '
+    .data.pmu_data[0].digital[0][1].normal_status == '0'
+    .data.pmu_data[0].digital[0][1].value == '0'
+    .data.pmu_data[0].digital[0][2].current_valid_inputs == '0'
+    .data.pmu_data[0].digital[0][2].name == 'Dig Channel 3   '
+    .data.pmu_data[0].digital[0][2].normal_status == '0'
+    .data.pmu_data[0].digital[0][2].value == '0'
+    .
+    .
+    .
 ```
-If everything goes on well, you should see something like this:
-```python
-Connecting to: 10.0.0.1 ...
-Connected to: ('10.0.0.1', 4712)
-Command "off" sent to 10.0.0.1
-Command "cfg2" sent to 10.0.0.1
-Command "on" sent to 10.0.0.1
-Network delay:0.0548s Local delay:0.0003s UTC: 10-22-2017 02:16:45.933333 59.9862Hz
-```
-
-
-Then, you can explore the received messages just like we did in previous examples:
-```python
->>> messages[0]
-[[<PhasorMessage |time=1508997111.8333333, sync, framesize=154, idcode=3, soc=1508997111, fracsec, data, chk=26901>]]
-```
-
-
-#### Example 4, get aligned messages and integrate with your application:
-Also, check pmu_to_file.py, pmu_to_rtds.py and freq_change.py
 
 ```python
-#!/usr/bin/env python
-
-import sys
-import time
-from datetime import datetime
-from phasortoolbox import Client, PDC, UDPDevice, DeviceControl
-
-
-def inline_print_freq(buffer_msgs):
-
-    now = time.time()
-
-    time_tag = datetime.utcfromtimestamp(
-        buffer_msgs[-1][0].time).strftime(
-        "UTC: %m-%d-%Y %H:%M:%S.%f")
-
-    freqlist = [pmu_d.freq for msg in buffer_msgs[-1]
-                for pmu_d in msg.data.pmu_data]
-
-    freq_str = ' '.join("%.4f" % (
-        my_msg) + 'Hz ' if my_msg is not None else
-        'No Data' for
-        my_msg in freqlist)
-
-    sys.stdout.write(
-        "Network delay:%.4fs Software delay:%.4fs " % (
-            now - buffer_msgs[-1][0].time,
-            now - max([_msg._arrtime for _msg in buffer_msgs[-1]])
-        ) + time_tag + " " + freq_str + "\r"
-    )
-    sys.stdout.flush()
-
-
-def main():
-
-    pmu7 = Client(SERVER_IP='10.0.0.1',
-                  SERVER_TCP_PORT=4712, IDCODE=1, MODE='TCP')
-    pmu9 = Client(SERVER_IP='10.0.0.2',
-                  SERVER_TCP_PORT=4712, IDCODE=2, MODE='TCP')
-    pdc = PDC()
-    pdc.CALLBACK = inline_print_freq  # Patch your function here!
-
-    dc = DeviceControl()
-    dc.device_list = [pmu7, pmu9, pdc]
-    dc.connection_list = [
-        [[pmu7, pmu9], [pdc]]
-    ]
-
-    dc.run()
-
-
-if __name__ == '__main__':
-    main()
-
+>>> msgs[199].data.pmu_data[0].digital[0][2].value
+'0'
 ```
 
 
+### Connect remote PMUs:
 
-#### Multipe applications from different set of sources:
+There are four connection methods defined in C37.118.2-2011:
 
-Need edit
-
+F.2.1 TCP-only method:
+"The client needs to know only the server address and port. "
+Example:
 ```python
-my_devices.connection_list = [
-    [[my_pmu1,my_pmu2], [my_pdc1]],
-    [[my_pmu2,my_pmu3], [my_pdc2]]
-    ]
-my_devices.device_list = [my_pdc1, my_pdc2, my_pmu1, my_pmu2, my_pmu3]
-my_devices.run()
+>>> import logging
+>>> logging.basicConfig(level=logging.DEBUG)
+>>> pmu_client1 = Client(remote_ip='10.0.0.1',remote_port=4712, idcode=1, mode='TCP')
+>>> pmu_client1.run(100)
+```
+F.2.2 UDP-only method:
+"The client must know the server address and port number. The server can respond to the client port or a different port by prior arrangement."
+local_port is optional if not configured.
+Example:
+```python
+>>> import logging
+>>> logging.basicConfig(level=logging.DEBUG)
+>>> pmu_client2 = Client(remote_ip='10.0.0.2',remote_port=4713, local_port=4713, idcode=2, mode='UDP')
+>>> pmu_client2.run(100)
+```
+F.2.3 TCP/UDP method:
+"The server address and port must be known to the client, and the client port UDP port must be known to the server (PMU)."
+Example:
+```python
+>>> import logging
+>>> logging.basicConfig(level=logging.DEBUG)
+>>> pmu_client3 = Client(remote_ip='10.0.0.3',remote_port=4712, local_port=4713 , idcode=3, mode='TCP_UDP')
+>>> pmu_client3.run(100)
+```
+    
+F.2.4 Spontaneous data transmission method:
+"The drawback to this method is lack of ability to turn the data stream on and off, ... " 
+remote_ip and remote_port is optional if not known.
+```python
+>>> import logging
+>>> logging.basicConfig(level=logging.DEBUG)
+>>> pmu_client4 = Client(remote_ip='10.0.0.4',local_port=4713, idcode=4, mode='UDP_S')
+>>> pmu_client4.run(100)
 ```
 
+### PDC
+```python
+>>> from phasortoolbox import PDC
+>>> pdc = PDC(clients=[pmu_client1, pmu_client2, pmu_client3, pmu_client4])
+>>> pdc.run(100)
+```
 
+### To do: More examples
