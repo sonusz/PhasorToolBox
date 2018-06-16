@@ -2,6 +2,7 @@
 import logging
 import time
 import asyncio
+import struct
 from concurrent.futures import Executor, ThreadPoolExecutor
 from phasortoolbox.message import Command
 from phasortoolbox import Parser
@@ -125,6 +126,7 @@ Example:
                 local_addr=('0.0.0.0', self.local_port))
 
     def _data_received(self, data, addr=None):
+
         perf_counter = time.perf_counter()
         arr_time = time.time()
         if self.process_pool:
@@ -202,9 +204,23 @@ class _TCPOnly(asyncio.Protocol):
     def __init__(self, idcode, callback=lambda data: None):
         self.idcode = idcode
         self.callback = callback
+        self.msg = b''
 
     def data_received(self, data):
-        self.callback(data)
+        self.msg += data
+        i = 0
+        for b in self.msg:
+            if b == 170:  # b'/xaa'
+                break
+            i += 1
+        self.msg = self.msg[i:]
+        while len(self.msg) >= 4:
+            l = struct.unpack('>H',self.msg[2:4])[0]
+            if len(self.msg) >= l:
+                self.callback(self.msg[:l])
+                self.msg = self.msg[l:]
+            else:
+                break
 
     def connection_made(self, transport):
         self.transport = transport
@@ -229,9 +245,23 @@ class _UDPOnly(asyncio.DatagramProtocol):
     def __init__(self, idcode, callback=lambda data: None):
         self.idcode = idcode
         self.callback = callback
+        self.msg = b''
 
     def datagram_received(self, data, addr):
-        self.callback(data)
+        self.msg += data
+        i = 0
+        for b in self.msg:
+            if b == 170:  # b'/xaa'
+                break
+            i += 1
+        self.msg = self.msg[i:]
+        while len(self.msg) >= 4:
+            l = struct.unpack('>H',self.msg[2:4])[0]
+            if len(self.msg) >= l:
+                self.callback(self.msg[:l])
+                self.msg = self.msg[l:]
+            else:
+                break
 
     def connection_made(self, transport):
         self.transport = transport
@@ -259,7 +289,21 @@ class _UDP_Spontaneous(asyncio.DatagramProtocol):
         self.remote_port = remote_port
         self.callback = callback
         self._pass_score = (self.remote_ip is not None) + (self.remote_port is not None)
+        self.msg = b''
 
     def datagram_received(self, data, addr):
         if (addr[0] == self.remote_ip) + (addr[1] == self.remote_port) == self._pass_score:
-            self.callback(data, addr)
+            self.msg += data
+            i = 0
+            for b in self.msg:
+                if b == 170:  # b'/xaa'
+                    break
+                i += 1
+            self.msg = self.msg[i:]
+            while len(self.msg) >= 4:
+                l = struct.unpack('>H',self.msg[2:4])[0]
+                if len(self.msg) >= l:
+                    self.callback(self.msg[:l])
+                    self.msg = self.msg[l:]
+                else:
+                    break
