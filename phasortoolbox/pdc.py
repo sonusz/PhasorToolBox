@@ -11,12 +11,16 @@ LOG=logging.getLogger('phasortoolbox.pdc')
 
 
 class Synchrophasor(UserList):
-    """docstring for Synchrophasor"""
+    """
+    time_tag is the time tag of the synchrophasor message
+    arr_time is the unix time that the last data frame for the synchrophasor received 
+    perf_counter is used the check the performace
+    """
     def __init__(self, list_, time_tag, arr_time, perf_counter):
         super(Synchrophasor, self).__init__(list_)
         self.time = time_tag
         self.arr_time = arr_time
-        self.perf_counter = perf_counter
+        self.perf_counter = perf_counter 
 
 
 class PDC(object):
@@ -30,12 +34,12 @@ This class aligns in coming synchrophasor messages using time tags.
 
 
     """
-    def __init__(self, callback=lambda buf_sync: None, clients=[], time_out=0.1, steps=1, return_on_time_out=False, process_pool=False):
+    def __init__(self, callback=lambda buf_sync: None, clients=[], time_out=0.1, history=1, return_on_time_out=False, process_pool=False):
         self.callback = callback
         self.clients = clients
         self.receive_counter = 0
         self.time_out = time_out
-        self.steps = steps
+        self.history = history
         self.return_on_time_out = return_on_time_out
         self.process_pool = process_pool
 
@@ -65,7 +69,7 @@ This class aligns in coming synchrophasor messages using time tags.
         if len(idcode_list) > len(set(idcode_list)):
             raise Exception('Duplicate id_code found. C37.118.2 standard does not support duplicate id_code. idcode list:',idcode_list)
             
-        self._buf = _Buffer(idcode_list, self._synchrophasors_created, self.time_out, self.steps, self.return_on_time_out)
+        self._buf = _Buffer(idcode_list, self._synchrophasors_created, self.time_out, self.history, self.return_on_time_out)
         self._buf_task = asyncio.ensure_future(self._buf.coro_check_timeout())
         for client in self.clients:
             client._add_pdc(id(self), self._buf.add_msg, self.loop, self.executor)
@@ -107,13 +111,13 @@ This class aligns in coming synchrophasor messages using time tags.
 
 
 class _Buffer(object):
-    def __init__(self, idcode_list, callback, time_out, steps, return_on_time_out):
+    def __init__(self, idcode_list, callback, time_out, history, return_on_time_out):
         self.idcode_list = idcode_list
         self.callback = callback
         self.time_out = time_out
-        self.steps = steps
+        self.history = history
         self.return_on_time_out = return_on_time_out
-        self._buffer_time_out = 0.2 * (steps + 1)
+        self._buffer_time_out = 0.2 * (history + 1)
         self._min_sleep = time_out/100
         self._data = defaultdict(lambda: defaultdict(lambda: None))
         self._arr_times = defaultdict(lambda: 0)
@@ -142,10 +146,10 @@ class _Buffer(object):
             self._send_synchrophasors_if_ready()
 
     def _send_synchrophasors_if_ready(self):
-        if len(self._ready_to_send) >= self.steps:
+        if len(self._ready_to_send) >= self.history:
             if self._ready_to_send[-1] != self._last_sent_time_tag:
                 synchrophasors = []
-                for i in reversed(range(1, self.steps+1)):
+                for i in reversed(range(1, self.history+1)):
                     synchrophasors.append(Synchrophasor([self._data[self._ready_to_send[-i]][idcode] for idcode in self.idcode_list], self._ready_to_send[-i], self._arr_times[self._ready_to_send[-i]], self._perf_counter[self._ready_to_send[-i]]))
                 self._last_sent_time_tag = self._ready_to_send[-1]
                 self.callback(synchrophasors)
