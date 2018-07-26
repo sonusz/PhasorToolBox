@@ -3,6 +3,7 @@ import logging
 import time
 import asyncio
 import struct
+import socket
 from concurrent.futures import Executor, ThreadPoolExecutor
 from phasortoolbox.message import Command
 from phasortoolbox import Parser
@@ -112,23 +113,28 @@ Example:
             self._transport, self._protocol = await self.loop.create_datagram_endpoint(lambda: _UDPOnly(self.idcode, self._data_received), local_addr=('0.0.0.0', self.local_port) if self.local_port else None, remote_addr=(self.remote_ip, self.remote_port))
 
         elif self.mode == 'TCP_UDP':
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                                  socket.IPPROTO_UDP)
+            #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            sock.bind(('0.0.0.0', self.local_port))
             LOG.info('Connecting to: (\'{}\', {}) ...'.format(self.remote_ip, self.remote_port))
             await self.loop.create_datagram_endpoint(
-                lambda: _UDP_Spontaneous(self.remote_ip, None, self._data_received),
-                local_addr=('0.0.0.0', self.local_port))
+                lambda: _UDP_Spontaneous(self.remote_ip, None, self._data_received), sock=sock)
             self._transport, self._protocol = await self.loop.create_connection(lambda: _TCPOnly(self.idcode, self._data_received),
                               self.remote_ip, self.remote_port)
 
         elif self.mode == 'UDP_S':
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                                  socket.IPPROTO_UDP)
+            #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            sock.bind(('0.0.0.0', self.local_port))
             LOG.warning('Waiting for configuration packet, this may last a minute ...')
             self._transport, self._protocol = await self.loop.create_datagram_endpoint(
-                lambda: _UDP_Spontaneous(self.remote_ip, self.remote_port, self._data_received),
-                local_addr=('0.0.0.0', self.local_port))
+                lambda: _UDP_Spontaneous(self.remote_ip, self.remote_port, self._data_received), sock=sock)
 
-    def _data_received(self, data, addr=None):
-
-        perf_counter = time.perf_counter()
-        arr_time = time.time()
+    def _data_received(self, data, perf_counter, arr_time, addr=None):
         if self.process_pool:
             future = self.executor.submit(self._parser.parse, data)
             if future.exception():
@@ -207,6 +213,8 @@ class _TCPOnly(asyncio.Protocol):
         self.msg = b''
 
     def data_received(self, data):
+        perf_counter = time.perf_counter()
+        arr_time = time.time()
         self.msg += data
         i = 0
         for b in self.msg:
@@ -217,7 +225,7 @@ class _TCPOnly(asyncio.Protocol):
         while len(self.msg) >= 4:
             l = struct.unpack('>H',self.msg[2:4])[0]
             if len(self.msg) >= l:
-                self.callback(self.msg[:l])
+                self.callback(self.msg[:l], perf_counter, arr_time)
                 self.msg = self.msg[l:]
             else:
                 break
@@ -248,6 +256,8 @@ class _UDPOnly(asyncio.DatagramProtocol):
         self.msg = b''
 
     def datagram_received(self, data, addr):
+        perf_counter = time.perf_counter()
+        arr_time = time.time()
         self.msg += data
         i = 0
         for b in self.msg:
@@ -258,7 +268,7 @@ class _UDPOnly(asyncio.DatagramProtocol):
         while len(self.msg) >= 4:
             l = struct.unpack('>H',self.msg[2:4])[0]
             if len(self.msg) >= l:
-                self.callback(self.msg[:l])
+                self.callback(self.msg[:l], perf_counter, arr_time)
                 self.msg = self.msg[l:]
             else:
                 break
@@ -292,6 +302,9 @@ class _UDP_Spontaneous(asyncio.DatagramProtocol):
         self.msg = b''
 
     def datagram_received(self, data, addr):
+        perf_counter = time.perf_counter()
+        arr_time = time.time()
+        #print('ha',addr[0],self.remote_ip,addr[1],self.remote_port,self._pass_score)
         if (addr[0] == self.remote_ip) + (addr[1] == self.remote_port) == self._pass_score:
             self.msg += data
             i = 0
@@ -303,7 +316,7 @@ class _UDP_Spontaneous(asyncio.DatagramProtocol):
             while len(self.msg) >= 4:
                 l = struct.unpack('>H',self.msg[2:4])[0]
                 if len(self.msg) >= l:
-                    self.callback(self.msg[:l])
+                    self.callback(self.msg[:l], perf_counter, arr_time)
                     self.msg = self.msg[l:]
                 else:
                     break
