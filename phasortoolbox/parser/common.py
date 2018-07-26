@@ -97,31 +97,31 @@ class PhasorMessage(KaitaiStruct):
         self.soc = self._io.read_u4be()
         self.fracsec = self._root.Fracsec(self._io, self, self._root,
                                           self._mini_cfg.time_base.time_base if self._mini_cfg else None)
-        _on = self.sync.frame_type.name
-        if _on == 'data':
+        _on = self.sync.frame_type.value
+        if _on == 0:
             if self._mini_cfg:
                 self.data = Data(self._io, _mini_cfg=self._mini_cfg)
             else:
                 self.data = self._io.read_bytes((self.framesize - 16))
-        elif _on == 'cfg2':
+        elif _on == 3:
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
             _mini_cfgs.add_cfg(self.idcode, self.data)
-        elif _on == 'cmd':
+        elif _on == 4:
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Command(io)
-        elif _on == 'cfg3':
+        elif _on == 5:
             _mini_cfgs.add_cfg(self.raw_pkt)
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg3(io)
-        elif _on == 'cfg1':
+        elif _on == 2:
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Cfg2(io)
-        elif _on == 'header':
+        elif _on == 1:
             self._raw_data = self._io.read_bytes((self.framesize - 16))
             io = KaitaiStream(BytesIO(self._raw_data))
             self.data = Header(io)
