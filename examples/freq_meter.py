@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+This is an real-time frequency meter of two PMUs.
+This code connects to two PMUs, plot the frequency of the past 300 time-stamps and update the plot in real-time.
+"""
+
 from phasortoolbox import PDC,Client
 import matplotlib.pyplot as plt
 import numpy as np
