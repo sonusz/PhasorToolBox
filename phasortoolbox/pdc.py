@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+
+import gc
 import time
 import bisect
 import asyncio
 from collections import defaultdict
 from concurrent.futures import Executor, ThreadPoolExecutor
-from phasortoolbox import Client, Synchrophasor
+from phasortoolbox import Synchrophasor
 import logging
 
 LOG=logging.getLogger('phasortoolbox.pdc')
@@ -81,7 +83,8 @@ This class aligns in coming synchrophasor messages using time tags.
                 raise future.exception()
         else:
             self.callback(synchrophasors)
-        del(synchrophasors)
+
+        gc.collect()
         if self.c == 0:
             return
         elif self.c > 1:
@@ -139,6 +142,7 @@ class _Buffer(object):
                     synchrophasors.append(Synchrophasor([self._data[self._ready_to_send[-i]][idcode] for idcode in self.idcode_list], self._ready_to_send[-i], self._arr_times[self._ready_to_send[-i]], self._perf_counter[self._ready_to_send[-i]]))
                 self._last_sent_time_tag = self._ready_to_send[-1]
                 self.callback(synchrophasors)
+
         
     def callback(self, synchrophasors):
         pass

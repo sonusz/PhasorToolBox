@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import gc
 import logging
 import time
 import asyncio
@@ -8,6 +9,7 @@ from concurrent.futures import Executor, ThreadPoolExecutor
 from phasortoolbox.message import Command
 from phasortoolbox import Parser
 LOG=logging.getLogger('phasortoolbox.client')
+
 
 class Client():
     """A synchrophasor protocol connection client.
@@ -70,6 +72,7 @@ Example:
         self._transport = None
         self._protocol = None
         self._pdc_callbacks = {}
+        self._garbage_collection = True
         self.set_loop()
 
     def callback(self, data):
@@ -146,7 +149,7 @@ Example:
             parse_time = (time.perf_counter() - perf_counter)/len(msgs)
         for msg in msgs:
             if msg.sync.frame_type.name == 'data':
-                msg.perf_counter = time.perf_counter()-parse_time
+                msg.perf_counter = perf_counter
                 msg.arr_time = arr_time
                 msg.parse_time = parse_time
                 self.receive_counter += 1
@@ -159,7 +162,8 @@ Example:
                 for pdc_id in self._pdc_callbacks:
                     self._pdc_callbacks[pdc_id](msg)
     
-                del(msg)
+                if self._garbage_collection:
+                    gc.collect()
     
                 if self.c == 0:
                     return
@@ -199,10 +203,13 @@ Example:
 
     def _add_pdc(self, _pdc_id, _pdc_callback, loop, executor):
         self._pdc_callbacks[_pdc_id] = _pdc_callback
+        self._garbage_collection = False
         self.set_loop(loop, executor)
 
     def _remove_pdc(self, _pdc_id):
         del(self._pdc_callbacks[_pdc_id])
+        if self._pdc_callbacks == {}:
+            self._garbage_collection = True
         self.set_loop()
 
 
@@ -268,7 +275,7 @@ class _UDPOnly(asyncio.DatagramProtocol):
         while len(self.msg) >= 4:
             l = struct.unpack('>H',self.msg[2:4])[0]
             if len(self.msg) >= l:
-                self.callback(self.msg[:l], perf_counter, arr_time)
+                self.callback(self.msg[:l], perf_counter, arr_time, addr)
                 self.msg = self.msg[l:]
             else:
                 break
@@ -316,7 +323,9 @@ class _UDP_Spontaneous(asyncio.DatagramProtocol):
             while len(self.msg) >= 4:
                 l = struct.unpack('>H',self.msg[2:4])[0]
                 if len(self.msg) >= l:
-                    self.callback(self.msg[:l], perf_counter, arr_time)
+                    self.callback(self.msg[:l], perf_counter, arr_time, addr)
                     self.msg = self.msg[l:]
+                    i += 1
                 else:
                     break
+

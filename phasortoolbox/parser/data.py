@@ -19,7 +19,7 @@ if parse_version(ks_version) < parse_version('0.7'):
 
 
 class Data(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None, _mini_cfg=None):
+    def __init__(self, _io, _mini_cfg):
         """
 
         :param _io:
@@ -29,33 +29,23 @@ class Data(KaitaiStruct):
         """
         self._mini_cfg = _mini_cfg
         self._io = _io
-        self._parent = _parent
-        self._root = _root if _root else self
-        self.pmu_data = [None] * (self._mini_cfg.num_pmu)
-        for i in range(self._mini_cfg.num_pmu):
-            self.pmu_data[i] = self._root.PmuData(
-                self._io, self, self._root, _station=self._mini_cfg.station[i])
+        self.pmu_data = [self.PmuData(
+                self._io, _station=self._mini_cfg.station[i]) for i in range(self._mini_cfg.num_pmu)]
 
     class PmuData(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None, _station=None):
+        def __init__(self, _io, _station=None):
             self._station = _station
             self._io = _io
-            self._parent = _parent
-            self._root = _root if _root else self
-            self.stat = self._root.PmuData.Stat(self._io, self, self._root)
-            self.phasors = [None] * (self._station.phnmr)
-            for i in range(self._station.phnmr):
-                self.phasors[i] = self._root.PmuData.Phasors(
-                    self._io, self, self._root, self._station.phunit[i])
+            self.stat = self.Stat(self._io)
+            self.phasors = [self.Phasors(
+                    self._io, self._station.format, self._station.phunit[i]) for i in range(self._station.phnmr)]
 
-            self.freq = self._root.PmuData.Freq(
-                self._io, self, self._root).freq.freq
-            self.dfreq = self._root.PmuData.Dfreq(self._io, self, self._root).dfreq.dfreq
+            self.freq = self.Freq(
+                self._io, self._station.format.freq_data_type, self._station.fnom.fundamental_frequency).freq.freq
+            self.dfreq = self.Dfreq(self._io, self._station.format.freq_data_type).dfreq.dfreq
 
-            self.analog = [None] * (self._station.annmr)
-            for i in range(self._station.annmr):
-                self.analog[i] = self._root.PmuData.Analog(
-                    self._io, self, self._root, self._station.anunit[i]).analog.analog
+            self.analog = [self.Analog(
+                    self._io, self._station.format.analogs_data_type, self._station.anunit[i]) for i in range(self._station.annmr)]
 
             self.digital = [None] * (self._station.dgnmr)
             for i in range(self._station.dgnmr):
@@ -77,24 +67,19 @@ class Data(KaitaiStruct):
                 self.value = value
 
         class Freq(KaitaiStruct):
-            def __init__(self, _io, _parent=None, _root=None):
+            def __init__(self, _io, freq_data_type, fundamental_frequency=None):
                 self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type
+                _on = freq_data_type
                 if _on == 'int':
-                    self.freq = self._root.PmuData.Freq.Int(
-                        self._io, self, self._root)
+                    self.freq = self.Int(self._io, fundamental_frequency)
                 elif _on == 'float':
-                    self.freq = self._root.PmuData.Freq.Float(
-                        self._io, self, self._root)
+                    self.freq = self.Float(self._io)
 
             class Int(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io, fundamental_frequency):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.raw_freq = self._io.read_s2be()
+                    self.fundamental_frequency = fundamental_frequency
 
                 @property
                 def freq(self):
@@ -102,14 +87,12 @@ class Data(KaitaiStruct):
                         return self._m_freq if hasattr(self, '_m_freq') else None
 
                     self._m_freq = (
-                        (self.raw_freq / 1000.0) + self._parent._parent._station.fnom.fundamental_frequency)
+                        (self.raw_freq / 1000.0) + self.fundamental_frequency)
                     return self._m_freq if hasattr(self, '_m_freq') else None
 
             class Float(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.raw_freq = self._io.read_f4be()
 
                 @property
@@ -182,47 +165,39 @@ class Data(KaitaiStruct):
                 unlocked_time_less_than_1000_s_larger_than_100_s = 2
                 unlocked_time_larger_than_1000_s = 3
 
-            def __init__(self, _io, _parent=None, _root=None):
+            def __init__(self, _io):
                 self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
-                self.data_error = self._root.PmuData.Stat.DataErrorEnum(
+                self.data_error = self.DataErrorEnum(
                     self._io.read_bits_int(2))
-                self.pmu_sync = self._root.PmuData.Stat.PmuSyncEnum(
+                self.pmu_sync = self.PmuSyncEnum(
                     self._io.read_bits_int(1))
-                self.data_sorting = self._root.PmuData.Stat.DataSortingEnum(
+                self.data_sorting = self.DataSortingEnum(
                     self._io.read_bits_int(1))
-                self.pmu_trigger_detected = self._root.PmuData.Stat.PmuTriggerDetectedEnum(
+                self.pmu_trigger_detected = self.PmuTriggerDetectedEnum(
                     self._io.read_bits_int(1))
-                self.configuration_change = self._root.PmuData.Stat.ConfigurationChangeEnum(
+                self.configuration_change = self.ConfigurationChangeEnum(
                     self._io.read_bits_int(1))
-                self.data_modified = self._root.PmuData.Stat.DataModifiedEnum(
+                self.data_modified = self.DataModifiedEnum(
                     self._io.read_bits_int(1))
-                self.pmu_time_quality = self._root.PmuData.Stat.PmuTimeQualityEnum(
+                self.pmu_time_quality = self.PmuTimeQualityEnum(
                     self._io.read_bits_int(3))
-                self.unlocked_time = self._root.PmuData.Stat.UnlockedTimeEnum(
+                self.unlocked_time = self.UnlockedTimeEnum(
                     self._io.read_bits_int(2))
-                self.trigger_reason = self._root.PmuData.Stat.TriggerReasonEnum(
+                self.trigger_reason = self.TriggerReasonEnum(
                     self._io.read_bits_int(4))
 
         class Dfreq(KaitaiStruct):
-            def __init__(self, _io, _parent=None, _root=None):
+            def __init__(self, _io, freq_data_type):
                 self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
-                _on = self._parent._station.format.freq_data_type
+                _on = freq_data_type
                 if _on == 'int':
-                    self.dfreq = self._root.PmuData.Dfreq.Int(
-                        self._io, self, self._root)
+                    self.dfreq = self.Int(self._io)
                 elif _on == 'float':
-                    self.dfreq = self._root.PmuData.Dfreq.Float(
-                        self._io, self, self._root)
+                    self.dfreq = self.Float(self._io)
 
             class Int(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.raw_dfreq = self._io.read_s2be()
 
                 @property
@@ -234,10 +209,8 @@ class Data(KaitaiStruct):
                     return self._m_dfreq if hasattr(self, '_m_dfreq') else None
 
             class Float(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.raw_dfreq = self._io.read_f4be()
 
                 @property
@@ -278,40 +251,35 @@ class Data(KaitaiStruct):
             def angle(self):
                 return self.phasors.phasors.angle
 
-            def __init__(self, _io, _parent=None, _root=None, _phunit=None):
+            def __init__(self, _io, _format, _phunit=None):
                 self._phunit = _phunit
+                self._format = _format
                 self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
                 self.name = self._phunit.name
-                _on = self._parent._station.format.phasors_data_type
+                _on = _format.phasors_data_type
                 if _on == 'int':
-                    self.phasors = self._root.PmuData.Phasors.Int(
-                        self._io, self, self._root, self._phunit.conversion_factor)
+                    self.phasors = self.Int(
+                        self._io, self._format.rectangular_or_polar, self._phunit.conversion_factor)
                 elif _on == 'float':
-                    self.phasors = self._root.PmuData.Phasors.Float(
-                        self._io, self, self._root)
+                    self.phasors = self.Float(
+                        self._io, self._format.rectangular_or_polar)
 
             class Int(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None, _conversion_factor=None):
+                def __init__(self, _io, rectangular_or_polar, _conversion_factor=None):
                     self._conversion_factor = _conversion_factor
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar
+                    _on = rectangular_or_polar
                     if _on == 'rectangular':
-                        self.phasors = self._root.PmuData.Phasors.Int.Rectangular(
-                            self._io, self, self._root, self._conversion_factor)
+                        self.phasors = self.Rectangular(
+                            self._io, self._conversion_factor)
                     elif _on == 'polar':
-                        self.phasors = self._root.PmuData.Phasors.Int.Polar(
-                            self._io, self, self._root, self._conversion_factor)
+                        self.phasors = self.Polar(
+                            self._io, self._conversion_factor)
 
                 class Rectangular(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None, _conversion_factor=None):
+                    def __init__(self, _io, _conversion_factor=None):
                         self._conversion_factor = _conversion_factor
                         self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
                         self.raw_real = self._io.read_s2be()
                         self.raw_imaginary = self._io.read_s2be()
 
@@ -350,11 +318,9 @@ class Data(KaitaiStruct):
                         return self._m_angle if hasattr(self, '_m_angle') else None
 
                 class Polar(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None, _conversion_factor=None):
+                    def __init__(self, _io, _conversion_factor=None):
                         self._conversion_factor = _conversion_factor
                         self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
                         self.raw_magnitude = self._io.read_u2be()
                         self.angle = self._io.read_s2be()
 
@@ -385,23 +351,19 @@ class Data(KaitaiStruct):
                         return self._m_magnitude if hasattr(self, '_m_magnitude') else None
 
             class Float(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io, rectangular_or_polar):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
-                    _on = self._parent._parent._station.format.rectangular_or_polar
+                    _on = rectangular_or_polar
                     if _on == 'rectangular':
-                        self.phasors = self._root.PmuData.Phasors.Float.Rectangular(
-                            self._io, self, self._root)
+                        self.phasors = self.Rectangular(
+                            self._io)
                     elif _on == 'polar':
-                        self.phasors = self._root.PmuData.Phasors.Float.Polar(
-                            self._io, self, self._root)
+                        self.phasors = self.Polar(
+                            self._io)
 
                 class Rectangular(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
+                    def __init__(self, _io):
                         self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
                         self.real = self._io.read_f4be()
                         self.imaginary = self._io.read_f4be()
 
@@ -424,10 +386,8 @@ class Data(KaitaiStruct):
                         return self._m_angle if hasattr(self, '_m_angle') else None
 
                 class Polar(KaitaiStruct):
-                    def __init__(self, _io, _parent=None, _root=None):
+                    def __init__(self, _io):
                         self._io = _io
-                        self._parent = _parent
-                        self._root = _root if _root else self
                         self.magnitude = self._io.read_f4be()
                         self.angle = self._io.read_f4be()
 
@@ -450,26 +410,39 @@ class Data(KaitaiStruct):
                         return self._m_imaginary if hasattr(self, '_m_imaginary') else None
 
         class Analog(KaitaiStruct):
-            def __init__(self, _io, _parent=None, _root=None, _anunit=None):
-                self._anunit = _anunit
+            def __repr__(self):
+                _repr_list = []
+                for item in ["name", "value"]:
+                    _r = getattr(self, item)
+                    _repr_list.append("=".join((item, _r.__repr__())))
+                return "<Analog |"+", ".join(_repr_list)+">"
+
+            def show(self, parent_path):
+                for item in ["name", "value"]:
+                    _r = getattr(self, item)
+                    print(parent_path+'.'+item+" == "+_r.__repr__())
+
+
+            def __init__(self, _io, analogs_data_type, _anunit=None):
                 self._io = _io
-                self._parent = _parent
-                self._root = _root if _root else self
-                self.name = self._anunit.name
-                _on = self._parent._station.format.analogs_data_type
+                self.name = _anunit.name
+                _on = analogs_data_type
                 if _on == 'int':
-                    self.analog = self._root.PmuData.Analog.Int(
-                        self._io, self, self._root, self._anunit.conversion_factor)
+                    self.analog = self.Int(
+                        self._io, _anunit.conversion_factor)
                 elif _on == 'float':
-                    self.analog = self._root.PmuData.Analog.Float(
-                        self._io, self, self._root)
+                    self.analog = self.Float(
+                        self._io)
+
+            @property
+            def value(self):
+                return self.analog.analog
+            
 
             class Int(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None, _conversion_factor=None):
+                def __init__(self, _io, _conversion_factor=None):
                     self._conversion_factor = _conversion_factor
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.raw_analog = self._io.read_bits_int(16)
 
                 @property
@@ -481,8 +454,6 @@ class Data(KaitaiStruct):
                     return self._m_analog if hasattr(self, '_m_analog') else None
 
             class Float(KaitaiStruct):
-                def __init__(self, _io, _parent=None, _root=None):
+                def __init__(self, _io):
                     self._io = _io
-                    self._parent = _parent
-                    self._root = _root if _root else self
                     self.analog = self._io.read_f4be()

@@ -19,17 +19,15 @@ class MiniCfg(object):
         #self._cfg_pkt = Common(io)
         #self._type = self._cfg_pkt.sync.frame_type.name
         #self._cfg = self._cfg_pkt.data
-        self._cfg = _cfg_pkt_data
-        self.num_pmu = self._cfg.num_pmu
-        self.time_base = self.TimeBase(self._cfg.time_base)
+        self.num_pmu = _cfg_pkt_data.num_pmu
+        self.time_base = self.TimeBase(_cfg_pkt_data.time_base)
         self.station = [None] * (self.num_pmu)
         for i in range(self.num_pmu):
-            self.station[i] = self.Station(self._cfg.station[i])
+            self.station[i] = self.Station(_cfg_pkt_data.station[i])
 
     class TimeBase(object):
         def __init__(self, _time_base):
-            self._time_base = _time_base
-            self.time_base = self._time_base.time_base
+            self.time_base = _time_base.time_base
 
     class Station(object):
         def __init__(self, _station):
@@ -52,34 +50,30 @@ class MiniCfg(object):
 
         class Format(object):
             def __init__(self, _format):
-                self._format = _format
-                self.unused = self._format.unused
-                self.freq_data_type = self._format.freq_data_type.name[:]
-                self.analogs_data_type = self._format.analogs_data_type.name[:]
-                self.phasors_data_type = self._format.phasors_data_type.name[:]
-                self.rectangular_or_polar = self._format.rectangular_or_polar.name[:]
+                self.unused = _format.unused
+                self.freq_data_type = _format.freq_data_type.name[:]
+                self.analogs_data_type = _format.analogs_data_type.name[:]
+                self.phasors_data_type = _format.phasors_data_type.name[:]
+                self.rectangular_or_polar = _format.rectangular_or_polar.name[:]
 
         class Phunit(object):
             def __init__(self, _phunit, name):
-                self._phunit = _phunit
-                self.conversion_factor = self._phunit.conversion_factor
+                self.conversion_factor = _phunit.conversion_factor
                 self.name = name
 
         class Anunit(object):
             def __init__(self, _anunit, name):
-                self._anunit = _anunit
-                self.conversion_factor = self._anunit.conversion_factor
+                self.conversion_factor = _anunit.conversion_factor
                 self.name = name
 
         class Digunit(UserList):
             def __init__(self, _digunit, names):
-                self._digunit = _digunit
                 self.data = [None] * 16
                 for i in range(16):
                     self.data[i] = self.Flag(
                         names[i],
-                        self._digunit.normal_status[i],
-                        self._digunit.current_valid_inputs[i]
+                        _digunit.normal_status[i],
+                        _digunit.current_valid_inputs[i]
                         )
 
             class Flag(object):
