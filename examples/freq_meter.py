@@ -3,8 +3,10 @@
 from phasortoolbox import PDC,Client
 import matplotlib.pyplot as plt
 import numpy as np
+import gc
 import logging
 logging.basicConfig(level=logging.DEBUG)
+
 
 class FreqMeter(object):
     def __init__(self):
@@ -37,6 +39,8 @@ class FreqMeter(object):
         self.ax2.set_ylim(min(y_data[1]),max(y_data[1]))
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        del(synchrophasors)
+        gc.collect()
 
 
 if __name__ == '__main__':
