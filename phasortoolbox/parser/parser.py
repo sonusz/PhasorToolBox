@@ -5,6 +5,7 @@ from .minicfg import MiniCfgs
 from .pcap import Pcap
 import logging
 LOG=logging.getLogger('phasortoolbox.parser')
+import struct
 
 
 class Parser(object):
@@ -50,6 +51,7 @@ class Parser(object):
                     stream.append(message)
             except Exception as e:
                 LOG.debug("Parsing error.")
+                print(len(stream))
                 raise
         return stream
 
@@ -62,15 +64,35 @@ class PcapParser(object):
 
     def from_pcap(self, file_name):
         self._pcap = Pcap.from_file(file_name)
-        _r_stream = b''
+
+
+        _r_stream = b''  # Get all bytes from pcap
         for pkt in self._pcap.packets:
             try:
                 _raw_data = pkt.body.body.body.body
-                if _raw_data[0] == 170:  # _raw_data[0]
-                    _r_stream += _raw_data
+                _r_stream += _raw_data
             except Exception as e:
                 LOG.debug("Pcap message parsing error.")
                 pass
 
-        return self._parser.parse(_r_stream)
+
+        _p_stream = b''  # Extract synchrophasor bytes
+        l = 1  # Expect to get at least one byte
+        while len(_r_stream) >= l:
+            if l == 1:  # Looking for header
+                i = 0
+                for b in _r_stream:
+                    if b == 170:
+                        l = 4 # Looking for length info
+                        break
+                    i += 1
+                _r_stream = _r_stream[i:]  # Remove unrecognized bytes
+            if l == 4 and len(_r_stream)>=4:
+                l = struct.unpack('>H',_r_stream[2:4])[0]  # Get synchrophasor msg length
+            if l > 4 and l <= len(_r_stream):
+                _p_stream += _r_stream[:l]
+                _r_stream = _r_stream[l:]
+                l = 1
+
+        return self._parser.parse(_p_stream)
 

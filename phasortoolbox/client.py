@@ -216,26 +216,12 @@ Example:
 class _TCPOnly(asyncio.Protocol):
     def __init__(self, idcode, callback=lambda data: None):
         self.idcode = idcode
-        self.callback = callback
-        self.msg = b''
+        self.buf = _stream_buffer(callback)
 
     def data_received(self, data):
         perf_counter = time.perf_counter()
         arr_time = time.time()
-        self.msg += data
-        i = 0
-        for b in self.msg:
-            if b == 170:  # b'/xaa'
-                break
-            i += 1
-        self.msg = self.msg[i:]
-        while len(self.msg) >= 4:
-            l = struct.unpack('>H',self.msg[2:4])[0]
-            if len(self.msg) >= l:
-                self.callback(self.msg[:l], perf_counter, arr_time)
-                self.msg = self.msg[l:]
-            else:
-                break
+        self.buf.add_bytes(data, perf_counter, arr_time)
 
     def connection_made(self, transport):
         self.transport = transport
@@ -259,26 +245,12 @@ class _TCPOnly(asyncio.Protocol):
 class _UDPOnly(asyncio.DatagramProtocol):
     def __init__(self, idcode, callback=lambda data: None):
         self.idcode = idcode
-        self.callback = callback
-        self.msg = b''
+        self.buf = _stream_buffer(callback)
 
     def datagram_received(self, data, addr):
         perf_counter = time.perf_counter()
         arr_time = time.time()
-        self.msg += data
-        i = 0
-        for b in self.msg:
-            if b == 170:  # b'/xaa'
-                break
-            i += 1
-        self.msg = self.msg[i:]
-        while len(self.msg) >= 4:
-            l = struct.unpack('>H',self.msg[2:4])[0]
-            if len(self.msg) >= l:
-                self.callback(self.msg[:l], perf_counter, arr_time, addr)
-                self.msg = self.msg[l:]
-            else:
-                break
+        self.buf.add_bytes(data, perf_counter, arr_time, addr)
 
     def connection_made(self, transport):
         self.transport = transport
@@ -304,28 +276,46 @@ class _UDP_Spontaneous(asyncio.DatagramProtocol):
                  callback=lambda data, addr: None):
         self.remote_ip = remote_ip
         self.remote_port = remote_port
-        self.callback = callback
         self._pass_score = (self.remote_ip is not None) + (self.remote_port is not None)
-        self.msg = b''
+        self.buf = _stream_buffer(callback)
 
     def datagram_received(self, data, addr):
         perf_counter = time.perf_counter()
         arr_time = time.time()
         #print('ha',addr[0],self.remote_ip,addr[1],self.remote_port,self._pass_score)
         if (addr[0] == self.remote_ip) + (addr[1] == self.remote_port) == self._pass_score:
-            self.msg += data
-            i = 0
-            for b in self.msg:
-                if b == 170:  # b'/xaa'
-                    break
-                i += 1
-            self.msg = self.msg[i:]
-            while len(self.msg) >= 4:
-                l = struct.unpack('>H',self.msg[2:4])[0]
-                if len(self.msg) >= l:
-                    self.callback(self.msg[:l], perf_counter, arr_time, addr)
-                    self.msg = self.msg[l:]
-                    i += 1
-                else:
-                    break
+            self.buf.add_bytes(data, perf_counter, arr_time, addr)
+
+class _stream_buffer():
+    def __init__(self, callback):
+        self.data = b''
+        self.l = 1 # 1 means waiting for header, larger than 1 means waiting to process l bytes
+        self.callback = callback
+
+    def add_bytes(self, bytes_, perf_counter, arr_time, addr=None):
+        self.data += bytes_
+        while len(self.data) >= self.l:
+            if self.l == 1:
+                self.find_header()
+            if self.l == 4 and len(self.data)>=4:
+                self.l = struct.unpack('>H',self.data[2:4])[0]
+            if self.l > 4 and self.l <= len(self.data):
+                self.callback(self.data[:self.l], perf_counter, arr_time, addr)
+                self.data=self.data[self.l:]
+                self.l = 1
+
+    def find_header(self):
+        i = 0
+        for b in self.data:
+            if b == 170:
+                self.l = 4 # waiting for length info
+                break
+            i += 1
+        self.data = self.data[i:]
+
+
+
+
+
+
 
