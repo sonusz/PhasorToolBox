@@ -64,7 +64,7 @@ Example:
         self.remote_port = remote_port  # 4712
         self.local_port = local_port  # 4712
         self.idcode = idcode  # 1
-        if callback:
+        if callback is not None:
             self.callback = callback  # lambda x: None
         self.mode = mode
         self.receive_counter = 0
