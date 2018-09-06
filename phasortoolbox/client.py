@@ -50,7 +50,7 @@ Example:
     >>> pmu_client.callback = f
     >>> pmu_client.run()
     """
-    def __init__(self, idcode, remote_ip=None, remote_port=None, local_port=None, mode='TCP', callback=lambda msg: None, process_pool=False):
+    def __init__(self, idcode, remote_ip=None, remote_port=None, local_port=None, mode='TCP', callback=None, process_pool=False):
         """docstring for __init__
         Args:
             idcode (int):  The idcode of the remote device. This argument must be provided.
@@ -64,7 +64,8 @@ Example:
         self.remote_port = remote_port  # 4712
         self.local_port = local_port  # 4712
         self.idcode = idcode  # 1
-        self.callback = callback  # lambda x: None
+        if callback:
+            self.callback = callback  # lambda x: None
         self.mode = mode
         self.receive_counter = 0
         self.process_pool = process_pool
