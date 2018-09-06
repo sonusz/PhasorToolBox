@@ -22,8 +22,9 @@ This class aligns in coming synchrophasor messages using time tags.
 
 
     """
-    def __init__(self, callback=lambda buf_sync: None, clients=[], time_out=0.1, history=1, return_on_time_out=False, process_pool=False):
-        self.callback = callback
+    def __init__(self, callback=None, clients=[], time_out=0.1, history=1, return_on_time_out=False, process_pool=False):
+        if callback:
+            self.callback = callback
         self.clients = clients
         self.receive_counter = 0
         self.time_out = time_out
