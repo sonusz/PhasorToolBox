@@ -13,7 +13,6 @@ import sys
 from phasortoolbox import PDC
 from phasortoolbox import Client
 # Remove the following two lines if you don't need to print out the log.
-import gc
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
