@@ -6,6 +6,11 @@ Tested on RedHat 7.2 with Python 3.6
 
 Please check [examples] folder for examples.
 
+Please consider to cite our paper if this package helped your work:
+X. Zhong, P. Arunagirinathan, I. Jayawardene, G. K. Venayagamoorthy and R. Brooks, "PhasorToolBox – A Python Package for Synchrophasor Application Prototyping," 2018 Clemson University Power Systems Conference (PSC), Charleston, SC, USA, 2018, pp. 1-8.
+doi: 10.1109/PSC.2018.8664020
+https://ieeexplore.ieee.org/document/8664020
+
 ## Performance:
 
 The average time to parse a single packet, where the data messages have four substations and 594 data fields, is 1 ms on a 2012 mac laptop.
