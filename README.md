@@ -24,6 +24,7 @@ The methods provided by the client module are coroutines. That makes it possible
 ```bash
 git clone https://github.com/sonusz/PhasorToolBox.git
 cd PhasorToolBox/
+pip3 install -r requirments.txt
 python3 setup.py install --user  --prefix=
 python3 parse_stream.py stream.bin
 ```
